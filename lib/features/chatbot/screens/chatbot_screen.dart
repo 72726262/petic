@@ -6,6 +6,7 @@ import 'package:employee_portal/core/theme/app_typography.dart';
 import 'package:employee_portal/core/theme/app_spacing.dart';
 import 'package:employee_portal/core/theme/app_radius.dart';
 import 'package:employee_portal/core/utils/app_utils.dart';
+import 'package:employee_portal/core/utils/app_strings.dart';
 import 'package:employee_portal/features/chatbot/cubit/chatbot_cubit.dart';
 import 'package:employee_portal/features/chatbot/cubit/chatbot_state.dart';
 import 'package:employee_portal/features/chatbot/models/chat_message_model.dart';
@@ -33,13 +34,9 @@ class _ChatbotViewState extends State<_ChatbotView> {
   final _msgCtrl = TextEditingController();
   final _scrollCtrl = ScrollController();
 
-  static const _quickReplies = [
-    'كيف أطلب إجازة؟',
-    'موعد صرف الراتب',
-    'مشكلة في الطابعة',
-    'كلمة مرور الواي فاي',
-    'برامج التدريب',
-  ];
+  List<String> _quickReplies(AppStrings s) => s.isAr
+    ? ['كيف أطلب إجازة؟', 'موعد صرف الراتب', 'مشكلة في الطابعة', 'كلمة مرور الواي فاي', 'برامج التدريب']
+    : ['How to request leave?', 'Salary schedule', 'Printer problem', 'WiFi password', 'Training programs'];
 
   @override
   void dispose() {
@@ -71,6 +68,7 @@ class _ChatbotViewState extends State<_ChatbotView> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final s = AppStrings.of(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -97,13 +95,13 @@ class _ChatbotViewState extends State<_ChatbotView> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('مساعد البوابة', style: AppTypography.titleSmall),
+                Text(s.chatbotScreenTitle, style: AppTypography.titleSmall),
                 BlocBuilder<ChatbotCubit, ChatbotState>(
                   builder: (_, state) {
                     final isTyping =
                         state is ChatbotReady && state.isTyping;
                     return Text(
-                      isTyping ? 'يكتب...' : 'متصل الآن',
+                      isTyping ? s.typing : 'Online',
                       style: AppTypography.labelSmall.copyWith(
                         color: isTyping
                             ? AppColors.warning
@@ -120,7 +118,7 @@ class _ChatbotViewState extends State<_ChatbotView> {
         actions: [
           IconButton(
             icon: const Icon(Icons.delete_outline_rounded),
-            tooltip: 'مسح المحادثة',
+            tooltip: s.isAr ? 'مسح المحادثة' : 'Clear chat',
             onPressed: () =>
                 context.read<ChatbotCubit>().clearChat(),
           ),
@@ -168,18 +166,19 @@ class _ChatbotViewState extends State<_ChatbotView> {
               if (state is! ChatbotReady || state.messages.length > 3) {
                 return const SizedBox.shrink();
               }
+              final replies = _quickReplies(s);
               return SizedBox(
                 height: 44,
                 child: ListView.separated(
                   padding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.lg),
                   scrollDirection: Axis.horizontal,
-                  itemCount: _quickReplies.length,
+                  itemCount: replies.length,
                   separatorBuilder: (_, __) =>
                       const SizedBox(width: AppSpacing.sm),
                   itemBuilder: (_, idx) => _QuickReplyChip(
-                    label: _quickReplies[idx],
-                    onTap: () => _send(_quickReplies[idx]),
+                    label: replies[idx],
+                    onTap: () => _send(replies[idx]),
                   ),
                 ),
               );
@@ -458,7 +457,7 @@ class _MessageInput extends StatelessWidget {
                 textInputAction: TextInputAction.send,
                 onSubmitted: (_) => onSend(),
                 decoration: InputDecoration(
-                  hintText: 'اكتب سؤالك...',
+                  hintText: AppStrings.of(context).typeMessage,
                   filled: true,
                   fillColor: isDark
                       ? AppColors.surfaceDark

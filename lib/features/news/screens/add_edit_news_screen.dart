@@ -7,6 +7,7 @@ import 'package:employee_portal/core/theme/app_typography.dart';
 import 'package:employee_portal/core/theme/app_spacing.dart';
 import 'package:employee_portal/core/theme/app_radius.dart';
 import 'package:employee_portal/core/utils/app_constants.dart';
+import 'package:employee_portal/core/utils/app_strings.dart';
 import 'package:employee_portal/core/error_handling/error_handler.dart';
 import 'package:employee_portal/features/auth/cubit/auth_cubit.dart';
 import 'package:employee_portal/features/auth/cubit/auth_state.dart';
@@ -71,7 +72,7 @@ class _AddEditNewsScreenState extends State<AddEditNewsScreen> {
     } catch (e) {
       if (mounted) {
         ErrorHandler.showErrorSnackbar(
-            context, 'فشل رفع الصورة. حاول مجددًا.');
+            context, AppStrings.of(context).isAr ? 'فشل رفع الصورة. حاول مجددًا.' : 'Image upload failed. Please try again.');
       }
     } finally {
       if (mounted) setState(() => _uploadingImage = false);
@@ -150,10 +151,13 @@ class _AddEditNewsScreenState extends State<AddEditNewsScreen> {
                 icon: const Icon(Icons.close_rounded),
                 onPressed: () => Navigator.of(context).pop(),
               ),
-              title: Text(
-                _isEditing ? 'تعديل الخبر' : 'إضافة خبر جديد',
-                style: AppTypography.titleMedium,
-              ),
+              title: Builder(builder: (ctx) {
+                final s = AppStrings.of(ctx);
+                return Text(
+                  _isEditing ? s.editNews : s.addNews,
+                  style: AppTypography.titleMedium,
+                );
+              }),
               centerTitle: true,
             ),
             body: Form(
@@ -165,46 +169,46 @@ class _AddEditNewsScreenState extends State<AddEditNewsScreen> {
                   _buildImagePicker(isDark),
                   const SizedBox(height: AppSpacing.xl),
 
-                  // ─── Title ────────────────────────────────────────
-                  AppTextField(
-                    controller: _titleCtrl,
-                    label: 'عنوان الخبر',
-                    hint: 'أدخل عنوان الخبر',
-                    prefixIcon: const Icon(Icons.title_rounded),
-                    validator: (v) =>
-                        v == null || v.isEmpty ? 'العنوان مطلوب' : null,
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-
-                  // ─── Subtitle ─────────────────────────────────────
-                  AppTextField(
-                    controller: _subtitleCtrl,
-                    label: 'ملخص (اختياري)',
-                    hint: 'ملخص مختصر للخبر',
-                    prefixIcon: const Icon(Icons.short_text_rounded),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-
-                  // ─── Content ──────────────────────────────────────
-                  AppTextField(
-                    controller: _contentCtrl,
-                    label: 'محتوى الخبر',
-                    hint: 'اكتب محتوى الخبر هنا...',
-                    prefixIcon: const Icon(Icons.article_outlined),
-                    maxLines: 10,
-                    validator: (v) =>
-                        v == null || v.isEmpty ? 'المحتوى مطلوب' : null,
-                  ),
-                  const SizedBox(height: AppSpacing.xxl),
-
-                  // ─── Submit Button ────────────────────────────────
-                  AppButton.primary(
-                    label: _isEditing ? 'حفظ التعديلات' : 'نشر الخبر',
-                    icon: _isEditing ? Icons.save_rounded : Icons.publish_rounded,
-                    isLoading: isLoading,
-                    onPressed: () => _submit(context),
-                  ),
-                  const SizedBox(height: AppSpacing.massive),
+                  Builder(builder: (ctx) {
+                    final s = AppStrings.of(ctx);
+                    return Column(
+                      children: [
+                        AppTextField(
+                          controller: _titleCtrl,
+                          label: s.newsTitle,
+                          hint: s.isAr ? 'أدخل عنوان الخبر' : 'Enter news title',
+                          prefixIcon: const Icon(Icons.title_rounded),
+                          validator: (v) =>
+                              v == null || v.isEmpty ? (s.isAr ? 'العنوان مطلوب' : 'Title is required') : null,
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
+                        AppTextField(
+                          controller: _subtitleCtrl,
+                          label: s.isAr ? 'ملخص (اختياري)' : 'Summary (optional)',
+                          hint: s.isAr ? 'ملخص مختصر للخبر' : 'Brief summary',
+                          prefixIcon: const Icon(Icons.short_text_rounded),
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
+                        AppTextField(
+                          controller: _contentCtrl,
+                          label: s.newsContent,
+                          hint: s.isAr ? 'اكتب محتوى الخبر هنا...' : 'Write news content here...',
+                          prefixIcon: const Icon(Icons.article_outlined),
+                          maxLines: 10,
+                          validator: (v) =>
+                              v == null || v.isEmpty ? (s.isAr ? 'المحتوى مطلوب' : 'Content is required') : null,
+                        ),
+                        const SizedBox(height: AppSpacing.xxl),
+                        AppButton.primary(
+                          label: _isEditing ? s.saveChanges : (s.isAr ? 'نشر الخبر' : 'Publish'),
+                          icon: _isEditing ? Icons.save_rounded : Icons.publish_rounded,
+                          isLoading: isLoading,
+                          onPressed: () => _submit(context),
+                        ),
+                        const SizedBox(height: AppSpacing.massive),
+                      ],
+                    );
+                  }),
                 ],
               ),
             ),
@@ -254,7 +258,7 @@ class _AddEditNewsScreenState extends State<AddEditNewsScreen> {
                             borderRadius: AppRadius.fullBorderRadius,
                           ),
                           child: Text(
-                            'اضغط لتغيير الصورة',
+                            AppStrings.of(context).isAr ? 'اضغط لتغيير الصورة' : 'Tap to change image',
                             style: AppTypography.labelSmall
                                 .copyWith(color: Colors.white),
                           ),
@@ -280,14 +284,14 @@ class _AddEditNewsScreenState extends State<AddEditNewsScreen> {
                       ),
                       const SizedBox(height: AppSpacing.sm),
                       Text(
-                        'اضغط لإضافة صورة للخبر',
+                        AppStrings.of(context).isAr ? 'اضغط لإضافة صورة' : 'Tap to add an image',
                         style: AppTypography.bodyMedium.copyWith(
                           color: AppColors.primary,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'اختياري',
+                        AppStrings.of(context).isAr ? 'اختياري' : 'Optional',
                         style: AppTypography.labelSmall.copyWith(
                           color: isDark
                               ? AppColors.onSurfaceVariantDark

@@ -10,6 +10,7 @@ import 'package:employee_portal/core/theme/app_spacing.dart';
 import 'package:employee_portal/core/router/route_names.dart';
 import 'package:employee_portal/core/error_handling/error_handler.dart';
 import 'package:employee_portal/core/utils/app_utils.dart';
+import 'package:employee_portal/core/utils/app_strings.dart';
 import 'package:employee_portal/features/auth/cubit/auth_cubit.dart';
 import 'package:employee_portal/features/auth/cubit/auth_state.dart';
 import 'package:employee_portal/shared/widgets/app_text_field.dart';
@@ -33,12 +34,20 @@ class _SignupScreenState extends State<SignupScreen>
 
   // Role selection
   String _selectedRole = 'user';
-  final List<Map<String, String>> _roles = [
-    {'value': 'user', 'label': 'مستخدم عادي'},
-    {'value': 'admin', 'label': 'مسؤول'},
-    {'value': 'hr', 'label': 'موارد بشرية'},
-    {'value': 'it', 'label': 'تقنية المعلومات'},
-  ];
+
+  List<Map<String, String>> _getRoles(AppStrings s, bool isAdmin) {
+    if (isAdmin) {
+      return [
+        {'value': 'user', 'label': s.roleUser},
+        {'value': 'admin', 'label': s.roleAdmin},
+        {'value': 'hr', 'label': s.roleHR},
+        {'value': 'it', 'label': s.roleIT},
+      ];
+    }
+    return [
+      {'value': 'user', 'label': s.roleUser},
+    ];
+  }
 
   // Animation Controllers
   late AnimationController _logoController;
@@ -115,27 +124,29 @@ class _SignupScreenState extends State<SignupScreen>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    // Guard: only admin or HR can access this screen
+    final s = AppStrings.of(context);
     final authState = context.read<AuthCubit>().state;
-    if (authState is AuthAuthenticated &&
-        !authState.user.isAdmin &&
-        !authState.user.isHR) {
+    final isAdmin = authState is AuthAuthenticated && authState.user.isAdmin;
+    final isHR = authState is AuthAuthenticated && authState.user.isHR;
+    
+    final roles = _getRoles(s, isAdmin);
+    
+    // Guard: only admin or HR can access this screen
+    if (!isAdmin && !isHR) {
       return Scaffold(
-        appBar: AppBar(title: const Text('إنشاء حساب')),
-        body: const Center(
-          child: Text(
-              'غير مصرح لك بالوصول لهذه الصفحة.\nهذه الصفحة مخصصة للمسؤولين فقط.'),
+        appBar: AppBar(title: Text(s.createAccount)),
+        body: Center(
+          child: Text('${s.accessDenied}\n${s.adminOnlyPage}'),
         ),
       );
     }
     return BlocListener<AuthCubit, AuthState>(
       listener: (context, state) {
         if (state is AuthAuthenticated) {
-          // Admin/HR already logged in — go back after creating the new account
           Navigator.of(context).pop();
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('تم إنشاء الحساب بنجاح!'),
+            SnackBar(
+              content: Text(s.accountCreatedSuccess),
               backgroundColor: AppColors.success,
             ),
           );
@@ -211,29 +222,16 @@ class _SignupScreenState extends State<SignupScreen>
                         child: Column(
                           children: [
                             Container(
-                              width: 80,
-                              height: 80,
-                              decoration: BoxDecoration(
-                                gradient: AppColors.primaryGradient,
-                                borderRadius: BorderRadius.circular(20),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppColors.primary.withOpacity(0.4),
-                                    blurRadius: 30,
-                                    spreadRadius: 0,
-                                    offset: const Offset(0, 12),
-                                  ),
-                                ],
-                              ),
-                              child: const Icon(
-                                Icons.person_add_rounded,
-                                color: Colors.white,
-                                size: 40,
+                              width: 130,
+                              height: 130,
+                              child: Image.asset(
+                                'assets/images/app_logo_final.png',
+                                fit: BoxFit.contain,
                               ),
                             ),
                             const SizedBox(height: 20),
                             Text(
-                              'إنشاء حساب',
+                              s.createAccount,
                               style: AppTypography.headlineMedium.copyWith(
                                 color:
                                     isDark ? Colors.white : AppColors.primary,
@@ -242,7 +240,7 @@ class _SignupScreenState extends State<SignupScreen>
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              'انضم إلى بوابة الموظفين',
+                              s.createAccountSubtitle,
                               style: AppTypography.bodyMedium.copyWith(
                                 color: isDark
                                     ? Colors.white.withOpacity(0.6)
@@ -293,11 +291,11 @@ class _SignupScreenState extends State<SignupScreen>
                                 _buildDarkTextField(
                                   context: context,
                                   controller: _nameController,
-                                  hint: 'الاسم الكامل',
+                                  hint: s.fullName,
                                   icon: Icons.person_outline_rounded,
                                   validator: (value) {
                                     if (value == null || value.isEmpty) {
-                                      return 'يرجى إدخال الاسم';
+                                      return s.nameRequired;
                                     }
                                     return null;
                                   },
@@ -309,10 +307,10 @@ class _SignupScreenState extends State<SignupScreen>
                                 _buildDarkTextField(
                                   context: context,
                                   controller: _emailController,
-                                  hint: 'البريد الإلكتروني',
+                                  hint: s.emailHint,
                                   icon: Icons.email_outlined,
                                   keyboardType: TextInputType.emailAddress,
-                                  validator: AppUtils.validateEmail,
+                                  validator: s.validateEmail,
                                 ),
 
                                 const SizedBox(height: 16),
@@ -321,7 +319,7 @@ class _SignupScreenState extends State<SignupScreen>
                                 _buildDarkTextField(
                                   context: context,
                                   controller: _passwordController,
-                                  hint: 'كلمة المرور',
+                                  hint: s.passwordHint,
                                   icon: Icons.lock_outline_rounded,
                                   obscureText: _obscurePassword,
                                   validator: AppUtils.validatePassword,
@@ -346,15 +344,15 @@ class _SignupScreenState extends State<SignupScreen>
                                 _buildDarkTextField(
                                   context: context,
                                   controller: _confirmPasswordController,
-                                  hint: 'تأكيد كلمة المرور',
+                                  hint: s.confirmPassword,
                                   icon: Icons.lock_outline_rounded,
                                   obscureText: _obscureConfirmPassword,
                                   validator: (value) {
                                     if (value == null || value.isEmpty) {
-                                      return 'يرجى تأكيد كلمة المرور';
+                                      return s.confirmPasswordRequired;
                                     }
                                     if (value != _passwordController.text) {
-                                      return 'كلمات المرور غير متطابقة';
+                                      return s.passwordsDoNotMatch;
                                     }
                                     return null;
                                   },
@@ -410,7 +408,7 @@ class _SignupScreenState extends State<SignupScreen>
                                             ? Colors.white
                                             : AppColors.onSurfaceLight,
                                       ),
-                                      items: _roles.map((role) {
+                                      items: roles.map((role) {
                                         return DropdownMenuItem<String>(
                                           value: role['value'],
                                           child: Row(
@@ -478,7 +476,7 @@ class _SignupScreenState extends State<SignupScreen>
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            'لديك حساب بالفعل؟ ',
+                            s.haveAccount,
                             style: AppTypography.bodyMedium.copyWith(
                               color: isDark
                                   ? Colors.white.withOpacity(0.6)
@@ -488,7 +486,7 @@ class _SignupScreenState extends State<SignupScreen>
                           GestureDetector(
                             onTap: () => context.push(RouteNames.login),
                             child: Text(
-                              'تسجيل الدخول',
+                              s.signIn,
                               style: AppTypography.bodyMedium.copyWith(
                                 color: AppColors.primaryLight,
                                 fontWeight: FontWeight.w600,
@@ -672,13 +670,16 @@ class _SignupButton extends StatelessWidget {
               : Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      'إنشاء حساب',
-                      style: AppTypography.buttonText.copyWith(
-                        color: Colors.white,
-                        fontSize: 16,
-                      ),
-                    ),
+                    Builder(builder: (ctx) {
+                      final s = AppStrings.of(ctx);
+                      return Text(
+                        s.createAccount,
+                        style: AppTypography.buttonText.copyWith(
+                          color: Colors.white,
+                          fontSize: 16,
+                        ),
+                      );
+                    }),
                     const SizedBox(width: 8),
                     const Icon(
                       Icons.arrow_forward_rounded,

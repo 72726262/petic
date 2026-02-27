@@ -9,6 +9,7 @@ import 'package:employee_portal/core/theme/app_shadows.dart';
 import 'package:employee_portal/core/router/route_names.dart';
 import 'package:employee_portal/core/animations/app_animations.dart';
 import 'package:employee_portal/core/utils/app_utils.dart';
+import 'package:employee_portal/core/utils/app_strings.dart';
 import 'package:employee_portal/core/error_handling/error_handler.dart';
 import 'package:employee_portal/features/events/cubit/event_cubit.dart';
 import 'package:employee_portal/features/events/cubit/event_state.dart';
@@ -54,7 +55,10 @@ class _EventsListViewState extends State<_EventsListView> {
       },
       builder: (context, state) {
         return Scaffold(
-          appBar: const CustomAppBar(title: 'الفعاليات', showBack: true),
+          appBar: CustomAppBar(
+            title: AppStrings.of(context).eventsScreenTitle,
+            showBack: true,
+          ),
           body: Column(
             children: [
               // ── Date Filter Bar ──────────────────────────────────
@@ -189,7 +193,8 @@ class _EventCard extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      AppUtils.getMonthInArabic(date.month),
+                      AppUtils.getMonthName(date.month,
+                          isAr: AppStrings.of(context).isAr),
                       style: AppTypography.labelSmall.copyWith(
                         color: Colors.white.withOpacity(0.9),
                       ),
@@ -280,7 +285,7 @@ class _EventCard extends StatelessWidget {
                                   ),
                                   const SizedBox(width: 3),
                                   Text(
-                                    'تصويت',
+                                    AppStrings.of(context).isAr ? 'تصويت' : 'Vote',
                                     style: AppTypography.labelSmall.copyWith(
                                       color: AppColors.primary,
                                       fontSize: 10,

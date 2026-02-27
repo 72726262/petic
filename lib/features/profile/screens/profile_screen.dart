@@ -7,7 +7,9 @@ import 'package:employee_portal/core/theme/app_spacing.dart';
 import 'package:employee_portal/core/theme/app_radius.dart';
 import 'package:employee_portal/core/theme/app_shadows.dart';
 import 'package:employee_portal/core/theme/theme_cubit.dart';
+import 'package:employee_portal/core/locale/locale_cubit.dart';
 import 'package:employee_portal/core/error_handling/error_handler.dart';
+import 'package:employee_portal/core/utils/app_strings.dart';
 
 import 'package:employee_portal/features/auth/cubit/auth_cubit.dart';
 import 'package:employee_portal/features/auth/cubit/auth_state.dart';
@@ -39,6 +41,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _saveProfile() async {
+    final s = AppStrings.of(context);
     setState(() => _saving = true);
     final uid = Supabase.instance.client.auth.currentUser!.id;
     try {
@@ -48,31 +51,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
       }).eq('id', uid);
       if (mounted) {
         context.read<AuthCubit>().refreshUser();
-        ErrorHandler.showSuccessSnackbar(context, 'تم حفظ التغييرات بنجاح.');
+        ErrorHandler.showSuccessSnackbar(context, s.profileSaveSuccess);
         setState(() => _editing = false);
       }
     } catch (_) {
-      if (mounted)
-        ErrorHandler.showErrorSnackbar(context, 'فشل في حفظ التغييرات.');
+      if (mounted) ErrorHandler.showErrorSnackbar(context, s.profileSaveError);
     } finally {
       if (mounted) setState(() => _saving = false);
     }
   }
 
   Future<void> _signOut() async {
+    final s = AppStrings.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('تسجيل الخروج'),
-        content: const Text('هل تريد تسجيل الخروج من الحساب؟'),
+        title: Text(s.logoutTitle),
+        content: Text(s.logoutConfirm),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('إلغاء')),
+              child: Text(s.cancel)),
           TextButton(
             style: TextButton.styleFrom(foregroundColor: AppColors.error),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('خروج'),
+            child: Text(s.logoutButton),
           ),
         ],
       ),
@@ -95,30 +98,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  String _roleLabel(String role) {
-    switch (role) {
-      case 'admin':
-        return 'مدير النظام';
-      case 'hr':
-        return 'الموارد البشرية';
-      case 'it':
-        return 'تقنية المعلومات';
-      default:
-        return 'موظف';
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
+    // ─── FIXED: tileDark defined here at outer scope so ALL child widgets can access it ───
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final s = AppStrings.of(context);
 
     return BlocBuilder<AuthCubit, AuthState>(
       builder: (context, state) {
-        // Show loader only while actively loading
         if (state is AuthLoading) {
           return const Scaffold(body: LoadingWidget());
         }
-        // If not authenticated, return empty – router will redirect immediately
         if (state is! AuthAuthenticated) {
           return const Scaffold(body: SizedBox.shrink());
         }
@@ -131,7 +121,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
         return Scaffold(
           appBar: CustomAppBar(
-            title: 'ملفي الشخصي',
+            title: s.myProfile,
             showBack: true,
             actions: [
               if (!_editing)
@@ -142,7 +132,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               else
                 TextButton(
                   onPressed: () => setState(() => _editing = false),
-                  child: const Text('إلغاء'),
+                  child: Text(s.cancel),
                 ),
             ],
           ),
@@ -206,7 +196,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         borderRadius: AppRadius.fullBorderRadius,
                       ),
                       child: Text(
-                        _roleLabel(user.role),
+                        s.roleLabel(user.role),
                         style: AppTypography.labelMedium.copyWith(
                           color: _roleColor(user.role),
                           fontWeight: FontWeight.w600,
@@ -222,13 +212,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
               // ── Editable Fields ──
               if (_editing) ...[
                 _FieldCard(
-                  label: 'الاسم الكامل',
+                  label: s.fullNameLabel,
                   controller: _nameCtrl,
                   icon: Icons.person_outline_rounded,
                 ),
                 const SizedBox(height: AppSpacing.md),
                 _FieldCard(
-                  label: 'القسم',
+                  label: s.departmentLabel,
                   controller: _deptCtrl,
                   icon: Icons.business_outlined,
                 ),
@@ -238,30 +228,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 else
                   AppButton(
                     onPressed: _saveProfile,
-                    label: 'حفظ التغييرات',
+                    label: s.saveChanges,
                   ),
               ] else ...[
                 _InfoTile(
-                  label: 'الاسم',
+                  label: s.nameLabel,
                   value: user.fullName,
                   icon: Icons.person_outline_rounded,
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 _InfoTile(
-                  label: 'البريد الإلكتروني',
+                  label: s.emailLabel,
                   value: user.email,
                   icon: Icons.email_outlined,
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 _InfoTile(
-                  label: 'القسم',
-                  value: user.department ?? 'غير محدد',
+                  label: s.departmentLabel,
+                  value: user.department ?? s.notSpecified,
                   icon: Icons.business_outlined,
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 _InfoTile(
-                  label: 'الدور الوظيفي',
-                  value: _roleLabel(user.role),
+                  label: s.jobRoleLabel,
+                  value: s.roleLabel(user.role),
                   icon: Icons.badge_outlined,
                 ),
               ],
@@ -273,18 +263,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 builder: (ctx) {
                   final themeCubit = ctx.watch<ThemeCubit>();
                   final isDarkMode = themeCubit.state == ThemeMode.dark;
-                  final tileDark = Theme.of(ctx).brightness == Brightness.dark;
                   return AnimatedContainer(
                     duration: const Duration(milliseconds: 300),
                     padding: const EdgeInsets.symmetric(
                         horizontal: AppSpacing.md, vertical: AppSpacing.sm),
                     decoration: BoxDecoration(
-                      color: tileDark
+                      color: isDark
                           ? AppColors.surfaceDark
                           : AppColors.surfaceLight,
                       borderRadius: AppRadius.lgBorderRadius,
                       boxShadow:
-                          tileDark ? AppShadows.softDark : AppShadows.soft,
+                          isDark ? AppShadows.softDark : AppShadows.soft,
                     ),
                     child: Row(
                       children: [
@@ -313,11 +302,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('المظهر', style: AppTypography.titleSmall),
+                              Text(s.themeLabel,
+                                  style: AppTypography.titleSmall),
                               Text(
-                                isDarkMode ? 'الوضع الليلي' : 'الوضع النهاري',
+                                isDarkMode ? s.darkModeLabel : s.lightModeLabel,
                                 style: AppTypography.bodySmall.copyWith(
-                                  color: tileDark
+                                  color: isDark
                                       ? AppColors.onSurfaceVariantDark
                                       : AppColors.onSurfaceVariantLight,
                                 ),
@@ -330,6 +320,74 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           activeColor: AppColors.accent,
                           onChanged: (_) =>
                               ctx.read<ThemeCubit>().toggleTheme(),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+
+              const SizedBox(height: AppSpacing.md),
+
+              // ── Language Toggle ────────────────────────────────────────────
+              BlocBuilder<LocaleCubit, Locale>(
+                builder: (ctx, locale) {
+                  final isAr = locale.languageCode == 'ar';
+                  return Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.lg,
+                      vertical: AppSpacing.md,
+                    ),
+                    decoration: BoxDecoration(
+                      // FIXED: using outer isDark instead of undefined tileDark
+                      color: isDark
+                          ? AppColors.surfaceDark
+                          : AppColors.surfaceLight,
+                      borderRadius: AppRadius.lgBorderRadius,
+                      boxShadow:
+                          isDark ? AppShadows.softDark : AppShadows.soft,
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(0.12),
+                            borderRadius: AppRadius.mdBorderRadius,
+                          ),
+                          child: const Icon(
+                            Icons.language_rounded,
+                            color: AppColors.primary,
+                            size: 22,
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.md),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                isAr ? 'اللغة' : 'Language',
+                                style: AppTypography.titleSmall,
+                              ),
+                              Text(
+                                isAr ? 'العربية' : 'English',
+                                style: AppTypography.bodySmall.copyWith(
+                                  color: isDark
+                                      ? AppColors.onSurfaceVariantDark
+                                      : AppColors.onSurfaceVariantLight,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Switch.adaptive(
+                          value: !isAr,
+                          activeColor: AppColors.primary,
+                          inactiveThumbColor: AppColors.accent,
+                          onChanged: (_) =>
+                              ctx.read<LocaleCubit>().toggleLocale(),
                         ),
                       ],
                     ),
@@ -350,7 +408,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 onPressed: _signOut,
                 icon: const Icon(Icons.logout_rounded),
-                label: const Text('تسجيل الخروج'),
+                label: Text(s.logout),
               ),
               const SizedBox(height: 30),
             ],

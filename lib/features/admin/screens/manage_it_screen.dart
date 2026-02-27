@@ -6,6 +6,7 @@ import 'package:employee_portal/core/theme/app_spacing.dart';
 import 'package:employee_portal/core/theme/app_radius.dart';
 import 'package:employee_portal/core/theme/app_shadows.dart';
 import 'package:employee_portal/core/utils/app_constants.dart';
+import 'package:employee_portal/core/utils/app_strings.dart';
 import 'package:employee_portal/core/animations/app_animations.dart';
 import 'package:employee_portal/core/error_handling/error_handler.dart';
 import 'package:employee_portal/features/it/models/it_content_model.dart';
@@ -71,40 +72,43 @@ class _ManageItScreenState extends State<ManageItScreen>
             .toList();
       });
     } catch (_) {
-      if (mounted) ErrorHandler.showErrorSnackbar(context, 'فشل تحميل البيانات.');
+      if (mounted) ErrorHandler.showErrorSnackbar(context, AppStrings.of(context).isAr ? 'فشل تحميل البيانات.' : 'Failed to load data.');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
 
   Future<void> _delete(String id) async {
-    final ok = await _confirm('هل تريد الحذف؟');
+    final s = AppStrings.of(context);
+    final ok = await _confirm(s.isAr ? 'هل تريد الحذف؟' : 'Confirm delete?');
     if (!ok) return;
     try {
       await _client.from(AppConstants.itContentTable).delete().eq('id', id);
-      ErrorHandler.showSuccessSnackbar(context, 'تم الحذف.');
+      ErrorHandler.showSuccessSnackbar(context, s.deleteSuccess);
       _fetchAll();
     } catch (_) {
-      ErrorHandler.showErrorSnackbar(context, 'فشل الحذف.');
+      ErrorHandler.showErrorSnackbar(context, s.error);
     }
   }
 
   Future<bool> _confirm(String msg) async =>
       await showDialog<bool>(
             context: context,
-            builder: (ctx) => AlertDialog(
-              title: const Text('تأكيد'),
-              content: Text(msg),
-              actions: [
-                TextButton(
-                    onPressed: () => Navigator.pop(ctx, false),
-                    child: const Text('إلغاء')),
-                TextButton(
-                    onPressed: () => Navigator.pop(ctx, true),
-                    child:
-                        Text('حذف', style: TextStyle(color: AppColors.error))),
-              ],
-            ),
+            builder: (ctx) {
+              final s = AppStrings.of(ctx);
+              return AlertDialog(
+                title: Text(s.isAr ? 'تأكيد' : 'Confirm'),
+                content: Text(msg),
+                actions: [
+                  TextButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: Text(s.cancel)),
+                  TextButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      child: Text(s.delete, style: TextStyle(color: AppColors.error))),
+                ],
+              );
+            },
           ) ??
       false;
 
@@ -128,9 +132,10 @@ class _ManageItScreenState extends State<ManageItScreen>
   Widget build(BuildContext context) {
     final items = _filtered;
 
+    final s = AppStrings.of(context);
     return Scaffold(
       appBar: CustomAppBar(
-        title: 'إدارة IT',
+        title: s.manageIT,
         showBack: true,
         bottom: TabBar(
           controller: _tabCtrl,
@@ -139,11 +144,11 @@ class _ManageItScreenState extends State<ManageItScreen>
           indicatorColor: AppColors.itColor,
           isScrollable: true,
           tabAlignment: TabAlignment.start,
-          tabs: const [
-            Tab(text: 'تنبيهات'),
-            Tab(text: 'نصائح'),
-            Tab(text: 'سياسات'),
-            Tab(text: 'أدلة'),
+          tabs: [
+            Tab(text: s.alerts),
+            Tab(text: s.tips),
+            Tab(text: s.policies),
+            Tab(text: s.isAr ? 'أدلة' : 'Guides'),
           ],
         ),
       ),
@@ -151,14 +156,14 @@ class _ManageItScreenState extends State<ManageItScreen>
         onPressed: () => _showForm(),
         backgroundColor: AppColors.itColor,
         icon: const Icon(Icons.add_rounded, color: Colors.white),
-        label: Text('إضافة',
+        label: Text(s.add,
             style: AppTypography.labelMedium.copyWith(color: Colors.white)),
       ),
       body: _loading
           ? const LoadingWidget()
           : items.isEmpty
-              ? const EmptyStateWidget(
-                  title: 'لا توجد عناصر.',
+              ? EmptyStateWidget(
+                  title: s.noData,
                   icon: Icons.computer_outlined)
               : RefreshIndicator(
                   onRefresh: _fetchAll,
@@ -236,7 +241,7 @@ class _ManageItScreenState extends State<ManageItScreen>
                                               borderRadius:
                                                   AppRadius.fullBorderRadius,
                                             ),
-                                            child: Text('عاجل',
+                                            child: Text(AppStrings.of(context).isAr ? 'عاجل' : 'Urgent',
                                                 style: AppTypography.labelSmall
                                                     .copyWith(
                                                         color: AppColors.error,
@@ -398,10 +403,15 @@ class _ITFormSheetState extends State<_ITFormSheet> {
                 ),
               ),
               const SizedBox(height: AppSpacing.lg),
-              Text(
-                widget.item == null ? 'إضافة عنصر IT' : 'تعديل العنصر',
-                style: AppTypography.headlineSmall,
-              ),
+              Builder(builder: (ctx) {
+                final s = AppStrings.of(ctx);
+                return Text(
+                  widget.item == null
+                    ? (s.isAr ? 'إضافة عنصر IT' : 'Add IT Item')
+                    : (s.isAr ? 'تعديل العنصر' : 'Edit Item'),
+                  style: AppTypography.headlineSmall,
+                );
+              }),
               const SizedBox(height: AppSpacing.xl),
 
               // Category selector
@@ -442,48 +452,55 @@ class _ITFormSheetState extends State<_ITFormSheet> {
               const SizedBox(height: AppSpacing.md),
 
               // Urgent toggle
-              SwitchListTile(
-                value: _isUrgent,
-                onChanged: (v) => setState(() => _isUrgent = v),
-                title: const Text('تنبيه عاجل'),
-                subtitle: const Text('سيظهر بحدود حمراء'),
-                activeColor: AppColors.error,
-                contentPadding: EdgeInsets.zero,
-              ),
+              Builder(builder: (ctx) {
+                final s = AppStrings.of(ctx);
+                return SwitchListTile(
+                  value: _isUrgent,
+                  onChanged: (v) => setState(() => _isUrgent = v),
+                  title: Text(s.isAr ? 'تنبيه عاجل' : 'Urgent Alert'),
+                  subtitle: Text(s.isAr ? 'سيظهر بحدود حمراء' : 'Will show with red border'),
+                  activeColor: AppColors.error,
+                  contentPadding: EdgeInsets.zero,
+                );
+              }),
               const Divider(),
               const SizedBox(height: AppSpacing.md),
 
-              AppTextField(
-                controller: _titleCtrl,
-                label: 'العنوان',
-                hint: 'عنوان العنصر',
-                validator: (v) =>
-                    v == null || v.isEmpty ? 'العنوان مطلوب' : null,
-              ),
-              const SizedBox(height: AppSpacing.md),
-
-              AppTextField(
-                controller: _descCtrl,
-                label: 'الوصف (اختياري)',
-                hint: 'تفاصيل العنصر',
-                maxLines: 3,
-              ),
-              const SizedBox(height: AppSpacing.md),
-
-              AppTextField(
-                controller: _urlCtrl,
-                label: 'رابط الملف (اختياري)',
-                hint: 'https://...',
-                keyboardType: TextInputType.url,
-              ),
-              const SizedBox(height: AppSpacing.xl),
-
-              AppButton.primary(
-                label: widget.item == null ? 'إضافة' : 'حفظ التعديلات',
-                icon: Icons.save_rounded,
-                onPressed: _saving ? null : _save,
-                isLoading: _saving,
-              ),
+              Builder(builder: (ctx) {
+                final s = AppStrings.of(ctx);
+                return Column(
+                  children: [
+                    AppTextField(
+                      controller: _titleCtrl,
+                      label: s.isAr ? 'العنوان' : 'Title',
+                      hint: s.isAr ? 'عنوان العنصر' : 'Item title',
+                      validator: (v) =>
+                          v == null || v.isEmpty ? (s.isAr ? 'العنوان مطلوب' : 'Title required') : null,
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    AppTextField(
+                      controller: _descCtrl,
+                      label: s.isAr ? 'الوصف (اختياري)' : 'Description (optional)',
+                      hint: s.isAr ? 'تفاصيل العنصر' : 'Item details',
+                      maxLines: 3,
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    AppTextField(
+                      controller: _urlCtrl,
+                      label: s.isAr ? 'رابط الملف (اختياري)' : 'File URL (optional)',
+                      hint: 'https://...',
+                      keyboardType: TextInputType.url,
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+                    AppButton.primary(
+                      label: widget.item == null ? s.add : s.saveChanges,
+                      icon: Icons.save_rounded,
+                      onPressed: _saving ? null : _save,
+                      isLoading: _saving,
+                    ),
+                  ],
+                );
+              }),
             ],
           ),
         ),

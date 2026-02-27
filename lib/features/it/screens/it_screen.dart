@@ -8,6 +8,7 @@ import 'package:employee_portal/core/theme/app_radius.dart';
 import 'package:employee_portal/core/theme/app_shadows.dart';
 import 'package:employee_portal/core/animations/app_animations.dart';
 import 'package:employee_portal/core/error_handling/error_handler.dart';
+import 'package:employee_portal/core/utils/app_strings.dart';
 import 'package:employee_portal/features/it/cubit/it_cubit.dart';
 import 'package:employee_portal/features/it/cubit/it_state.dart';
 import 'package:employee_portal/features/it/models/it_content_model.dart';
@@ -54,7 +55,7 @@ class _ITViewState extends State<_ITView> {
           if (state is ITLoaded) loaded = state;
           return Scaffold(
             appBar: CustomAppBar(
-              title: 'تقنية المعلومات',
+              title: AppStrings.of(context).itScreenTitle,
               showBack: true,
               bottom: TabBar(
                 labelColor: AppColors.itColor,
@@ -66,11 +67,11 @@ class _ITViewState extends State<_ITView> {
                 labelStyle: AppTypography.labelMedium
                     .copyWith(fontWeight: FontWeight.w600),
                 unselectedLabelStyle: AppTypography.labelMedium,
-                tabs: const [
-                  Tab(text: 'تنبيهات'),
-                  Tab(text: 'نصائح'),
-                  Tab(text: 'السياسات'),
-                  Tab(text: 'الأدلة'),
+                tabs: [
+                  Tab(text: AppStrings.of(context).alerts),
+                  Tab(text: AppStrings.of(context).tips),
+                  Tab(text: AppStrings.of(context).policies),
+                  Tab(text: AppStrings.of(context).isAr ? 'الأدلة' : 'Guides'),
                 ],
               ),
             ),
@@ -271,7 +272,7 @@ class _ITCard extends StatelessWidget {
                               borderRadius: AppRadius.fullBorderRadius,
                             ),
                             child: Text(
-                              'عاجل',
+                              AppStrings.of(context).isAr ? 'عاجل' : 'Urgent',
                               style: AppTypography.labelSmall.copyWith(
                                 color: AppColors.error,
                                 fontWeight: FontWeight.w700,

@@ -7,6 +7,7 @@ import 'package:employee_portal/core/theme/app_radius.dart';
 import 'package:employee_portal/core/theme/app_shadows.dart';
 import 'package:employee_portal/core/router/route_names.dart';
 import 'package:employee_portal/core/animations/app_animations.dart';
+import 'package:employee_portal/core/utils/app_strings.dart';
 import 'package:employee_portal/features/admin/services/admin_service.dart';
 import 'package:employee_portal/features/auth/models/user_model.dart';
 import 'package:employee_portal/shared/widgets/custom_app_bar.dart';
@@ -29,13 +30,16 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
   String _roleFilter = 'all';
 
   final _roles = ['all', 'user', 'hr', 'it', 'admin'];
-  final _roleLabels = {
-    'all': 'الكل',
-    'user': 'موظف',
-    'hr': 'الموارد البشرية',
-    'it': 'تقنية المعلومات',
-    'admin': 'مدير'
-  };
+  String _roleLabel(String role) {
+    final s = AppStrings.of(context);
+    switch (role) {
+      case 'all': return s.isAr ? 'الكل' : 'All';
+      case 'hr': return s.roleHR;
+      case 'it': return s.roleIT;
+      case 'admin': return s.roleAdmin;
+      default: return s.roleUser;
+    }
+  }
 
   @override
   void initState() {
@@ -81,16 +85,14 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
     }
   }
 
-  String _roleLabel(String role) =>
-      _roleLabels[role] ?? role;
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: const CustomAppBar(
-        title: 'إدارة الموظفين',
+      appBar: CustomAppBar(
+        title: AppStrings.of(context).isAr ? 'إدارة الموظفين' : 'Employees',
         showBack: true,
       ),
       body: _loading
@@ -109,7 +111,7 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
                           _applyFilter();
                         },
                         decoration: InputDecoration(
-                          hintText: 'بحث عن موظف...',
+                          hintText: AppStrings.of(context).searchEmployee,
                           prefixIcon: const Icon(Icons.search_rounded),
                           filled: true,
                           fillColor: isDark
@@ -155,8 +157,8 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
                 // ── Employee List ──
                 Expanded(
                   child: _filtered.isEmpty
-                      ? const EmptyStateWidget(
-                          title: 'لا يوجد موظفون',
+                      ? EmptyStateWidget(
+                          title: AppStrings.of(context).noEmployeesFound,
                           icon: Icons.people_outline_rounded,
                         )
                       : RefreshIndicator(

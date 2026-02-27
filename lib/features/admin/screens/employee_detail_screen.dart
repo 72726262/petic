@@ -5,6 +5,7 @@ import 'package:employee_portal/core/theme/app_typography.dart';
 import 'package:employee_portal/core/theme/app_spacing.dart';
 import 'package:employee_portal/core/theme/app_radius.dart';
 import 'package:employee_portal/core/theme/app_shadows.dart';
+import 'package:employee_portal/core/utils/app_strings.dart';
 import 'package:employee_portal/features/admin/services/admin_service.dart';
 import 'package:employee_portal/features/auth/models/user_model.dart';
 import 'package:employee_portal/shared/widgets/custom_app_bar.dart';
@@ -26,11 +27,11 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
   bool _loading = true;
   String? _selectedRole;
 
-  static const _roles = [
-    {'value': 'user', 'label': 'موظف عادي'},
-    {'value': 'hr', 'label': 'موارد بشرية'},
-    {'value': 'it', 'label': 'تقنية معلومات'},
-    {'value': 'admin', 'label': 'مدير'},
+  List<Map<String, String>> _roleItems(AppStrings s) => [
+    {'value': 'user', 'label': s.roleUser},
+    {'value': 'hr', 'label': s.roleHR},
+    {'value': 'it', 'label': s.roleIT},
+    {'value': 'admin', 'label': s.roleAdmin},
   ];
 
   @override
@@ -57,7 +58,7 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
       await _service.updateUserRole(userId: _user!.id, role: _selectedRole!);
       if (mounted) {
         ErrorHandler.showSuccessSnackbar(
-            context, 'تم تحديث الصلاحية بنجاح.');
+            context, AppStrings.of(context).isAr ? 'تم تحديث الصلاحية بنجاح.' : 'Role updated successfully.');
         setState(() => _user = UserModel(
               id: _user!.id,
               email: _user!.email,
@@ -69,33 +70,36 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
             ));
       }
     } catch (e) {
-      if (mounted) ErrorHandler.showErrorSnackbar(context, 'فشل تحديث الصلاحية.');
+      if (mounted) ErrorHandler.showErrorSnackbar(context, AppStrings.of(context).isAr ? 'فشل تحديث الصلاحية.' : 'Failed to update role.');
     }
   }
 
   Future<void> _confirmDelete() async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('حذف الموظف'),
-        content: Text('هل تريد حذف ${_user?.fullName}؟ لا يمكن التراجع.'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('إلغاء')),
-          TextButton(
-              style: TextButton.styleFrom(foregroundColor: AppColors.error),
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('حذف')),
-        ],
-      ),
+      builder: (ctx) {
+        final s = AppStrings.of(ctx);
+        return AlertDialog(
+          title: Text(s.isAr ? 'حذف الموظف' : 'Delete Employee'),
+          content: Text(s.isAr ? 'هل تريد حذف ${_user?.fullName}؟ لا يمكن التراجع.' : 'Delete ${_user?.fullName}? This cannot be undone.'),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: Text(s.cancel)),
+            TextButton(
+                style: TextButton.styleFrom(foregroundColor: AppColors.error),
+                onPressed: () => Navigator.pop(ctx, true),
+                child: Text(s.delete)),
+          ],
+        );
+      },
     );
     if (confirmed == true && mounted) {
       try {
         await _service.deleteUser(_user!.id);
         if (mounted) Navigator.of(context).pop();
       } catch (_) {
-        if (mounted) ErrorHandler.showErrorSnackbar(context, 'فشل حذف الموظف.');
+        if (mounted) ErrorHandler.showErrorSnackbar(context, AppStrings.of(context).isAr ? 'فشل حذف الموظف.' : 'Failed to delete employee.');
       }
     }
   }
@@ -113,14 +117,15 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    final s = AppStrings.of(context);
     return Scaffold(
       appBar: CustomAppBar(
-        title: 'بيانات الموظف',
+        title: s.isAr ? 'بيانات الموظف' : 'Employee Details',
         showBack: true,
         actions: [
           IconButton(
             icon: const Icon(Icons.delete_outline_rounded, color: AppColors.error),
-            tooltip: 'حذف الموظف',
+            tooltip: s.isAr ? 'حذف الموظف' : 'Delete Employee',
             onPressed: _confirmDelete,
           ),
         ],
@@ -128,7 +133,7 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
       body: _loading
           ? const LoadingWidget()
           : _user == null
-              ? const Center(child: Text('لم يتم العثور على الموظف.'))
+              ? Center(child: Text(s.isAr ? 'لم يتم العثور على الموظف.' : 'Employee not found.'))
               : ListView(
                   padding: const EdgeInsets.all(AppSpacing.lg),
                   children: [
@@ -183,14 +188,14 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
 
                     // ── Info Cards ──
                     _InfoRow(
-                      label: 'القسم',
-                      value: _user!.department ?? 'غير محدد',
+                      label: s.departmentLabel,
+                      value: _user!.department ?? s.notSpecified,
                       icon: Icons.business_outlined,
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     _InfoRow(
-                      label: 'تاريخ الانضمام',
-                      value: DateFormat('dd MMM yyyy', 'ar')
+                      label: s.isAr ? 'تاريخ الانضمام' : 'Join Date',
+                      value: DateFormat('dd MMM yyyy', s.isAr ? 'ar' : 'en')
                           .format(_user!.createdAt),
                       icon: Icons.calendar_today_outlined,
                     ),
@@ -211,10 +216,10 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('تغيير الصلاحية',
+                          Text(s.isAr ? 'تغيير الصلاحية' : 'Change Role',
                               style: AppTypography.titleSmall),
                           const SizedBox(height: AppSpacing.md),
-                          ..._roles.map(
+                          ..._roleItems(s).map(
                             (r) => RadioListTile<String>(
                               value: r['value']!,
                               groupValue: _selectedRole,
@@ -230,7 +235,7 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
                           const SizedBox(height: AppSpacing.md),
                           AppButton(
                             onPressed: _updateRole,
-                            label: 'حفظ التغييرات',
+                            label: s.saveChanges,
                           ),
                         ],
                       ),

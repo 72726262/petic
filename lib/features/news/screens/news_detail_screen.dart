@@ -7,6 +7,7 @@ import 'package:employee_portal/core/theme/app_spacing.dart';
 import 'package:employee_portal/core/theme/app_radius.dart';
 import 'package:employee_portal/core/router/route_names.dart';
 import 'package:employee_portal/core/utils/app_utils.dart';
+import 'package:employee_portal/core/utils/app_strings.dart';
 import 'package:employee_portal/features/auth/cubit/auth_cubit.dart';
 import 'package:employee_portal/features/auth/cubit/auth_state.dart';
 import 'package:employee_portal/features/news/cubit/news_cubit.dart';
@@ -164,7 +165,7 @@ class _NewsDetailView extends StatelessWidget {
                               borderRadius: AppRadius.fullBorderRadius,
                             ),
                             child: Text(
-                              'خبر',
+                              AppStrings.of(context).isAr ? 'خبر' : 'News',
                               style: AppTypography.labelSmall.copyWith(
                                 color: AppColors.newsColor,
                                 fontWeight: FontWeight.w600,

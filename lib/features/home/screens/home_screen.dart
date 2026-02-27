@@ -13,6 +13,8 @@ import 'package:employee_portal/core/theme/app_radius.dart';
 import 'package:employee_portal/core/theme/app_shadows.dart';
 import 'package:employee_portal/core/router/route_names.dart';
 import 'package:employee_portal/core/utils/app_utils.dart';
+import 'package:employee_portal/core/utils/app_strings.dart';
+import 'package:employee_portal/core/locale/locale_cubit.dart';
 import 'package:employee_portal/core/animations/app_animations.dart';
 import 'package:employee_portal/features/auth/cubit/auth_cubit.dart';
 import 'package:employee_portal/features/auth/cubit/auth_state.dart';
@@ -61,8 +63,6 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return BlocListener<AuthCubit, AuthState>(
-      // Listens to auth state changes *after* the screen is built
-      // This covers the case where auth resolves after navigation
       listener: (context, authState) {
         if (authState is AuthAuthenticated) {
           final homeState = context.read<HomeCubit>().state;
@@ -71,32 +71,36 @@ class _HomeScreenState extends State<HomeScreen> {
           }
         }
       },
-      child: Scaffold(
-        body: BlocBuilder<HomeCubit, HomeState>(
-          builder: (context, state) {
-            if (state is HomeLoading || state is HomeInitial) {
-              return const _HomeSkeletonLoader();
-            }
-            if (state is HomeError) {
-              return ErrorStateWidget(
-                message: state.message,
-                onRetry: () {
-                  final authState = context.read<AuthCubit>().state;
-                  if (authState is AuthAuthenticated) {
-                    context.read<HomeCubit>().loadHome(user: authState.user);
-                  }
-                },
-              );
-            }
-            if (state is HomeLoaded) {
-              return _HomeContent(
-                data: state.data,
-                user: state.user,
-              );
-            }
-            return const SizedBox.shrink();
-          },
-        ),
+      child: BlocBuilder<LocaleCubit, Locale>(
+        builder: (context, _) {
+          return Scaffold(
+            body: BlocBuilder<HomeCubit, HomeState>(
+              builder: (context, state) {
+                if (state is HomeLoading || state is HomeInitial) {
+                  return const _HomeSkeletonLoader();
+                }
+                if (state is HomeError) {
+                  return ErrorStateWidget(
+                    message: state.message,
+                    onRetry: () {
+                      final authState = context.read<AuthCubit>().state;
+                      if (authState is AuthAuthenticated) {
+                        context.read<HomeCubit>().loadHome(user: authState.user);
+                      }
+                    },
+                  );
+                }
+                if (state is HomeLoaded) {
+                  return _HomeContent(
+                    data: state.data,
+                    user: state.user,
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+          );
+        },
       ),
     );
   }
@@ -134,10 +138,13 @@ class _HomeContent extends StatelessWidget {
 
           // ─── Section 3: Quick Actions Grid ────────────────────────────
           SliverToBoxAdapter(
-            child: SectionHeader(
-              title: 'الوصول السريع',
-              actionLabel: null,
-            ),
+            child: Builder(builder: (ctx) {
+              final s = AppStrings.of(ctx);
+              return SectionHeader(
+                title: s.quickActions,
+                actionLabel: null,
+              );
+            }),
           ),
           const SliverToBoxAdapter(
             child: Padding(
@@ -157,18 +164,24 @@ class _HomeContent extends StatelessWidget {
 
           // ─── Section 5: Latest News ───────────────────────────────────
           SliverToBoxAdapter(
-            child: SectionHeader(
-              title: 'آخر الأخبار',
-              actionLabel: 'عرض الكل',
-              onAction: () => context.push(RouteNames.newsList),
-            ),
+            child: Builder(builder: (ctx) {
+              final s = AppStrings.of(ctx);
+              return SectionHeader(
+                title: s.latestNews,
+                actionLabel: s.seeAll,
+                onAction: () => context.push(RouteNames.newsList),
+              );
+            }),
           ),
           SliverToBoxAdapter(
             child: data.latestNews.isEmpty
-                ? const Padding(
-                    padding: EdgeInsets.all(AppSpacing.lg),
-                    child: Center(child: Text('لا توجد أخبار بعد')),
-                  )
+                ? Builder(builder: (ctx) {
+                    final s = AppStrings.of(ctx);
+                    return Padding(
+                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      child: Center(child: Text(s.noNewsYet)),
+                    );
+                  })
                 : _NewsHorizontalList(news: data.latestNews),
           ),
 
@@ -176,18 +189,24 @@ class _HomeContent extends StatelessWidget {
 
           // ─── Section 6: Events ────────────────────────────────────────
           SliverToBoxAdapter(
-            child: SectionHeader(
-              title: 'الفعاليات القادمة',
-              actionLabel: 'عرض الكل',
-              onAction: () => context.push(RouteNames.eventsList),
-            ),
+            child: Builder(builder: (ctx) {
+              final s = AppStrings.of(ctx);
+              return SectionHeader(
+                title: s.upcomingEvents,
+                actionLabel: s.seeAll,
+                onAction: () => ctx.push(RouteNames.eventsList),
+              );
+            }),
           ),
           SliverToBoxAdapter(
             child: data.upcomingEvents.isEmpty
-                ? const Padding(
-                    padding: EdgeInsets.all(AppSpacing.lg),
-                    child: Center(child: Text('لا توجد فعاليات قادمة')),
-                  )
+                ? Builder(builder: (ctx) {
+                    final s = AppStrings.of(ctx);
+                    return Padding(
+                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      child: Center(child: Text(s.noEventsYet)),
+                    );
+                  })
                 : _EventsVerticalList(events: data.upcomingEvents),
           ),
 
@@ -250,14 +269,14 @@ class _HomeHeader extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      AppUtils.getGreeting(),
+                      AppStrings.of(context).greeting,
                       style: AppTypography.bodyMedium.copyWith(
                         color: Colors.white.withOpacity(0.75),
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      user.fullName.isNotEmpty ? user.fullName : 'الموظف',
+                      user.fullName.isNotEmpty ? user.fullName : AppStrings.of(context).employeeFallback,
                       style: AppTypography.titleLarge.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.w700,
@@ -422,8 +441,9 @@ class _InfoCardsRowState extends State<_InfoCardsRow> {
 
   // Weather state
   String _temp = '--';
-  String _condition = 'جارٍ التحميل...';
+  String _condition = '';
   String _cityName = '';
+  int _weatherCode = -1;
   IconData _weatherIcon = Icons.cloud_outlined;
   Color _weatherColor = AppColors.primary;
 
@@ -449,7 +469,7 @@ class _InfoCardsRowState extends State<_InfoCardsRow> {
 
       double lat = 24.7136; // fallback: Riyadh
       double lon = 46.6753;
-      String cityName = 'الرياض';
+      String cityName = 'Riyadh';
 
       if (perm != LocationPermission.denied &&
           perm != LocationPermission.deniedForever) {
@@ -478,7 +498,7 @@ class _InfoCardsRowState extends State<_InfoCardsRow> {
         if (mounted) {
           setState(() {
             _temp = '$temp°C';
-            _condition = _label(code, cityName);
+            _weatherCode = code;
             _weatherIcon = _icon(code);
             _weatherColor = _color(code);
             _cityName = cityName;
@@ -486,7 +506,7 @@ class _InfoCardsRowState extends State<_InfoCardsRow> {
         }
       }
     } catch (_) {
-      if (mounted) setState(() => _condition = 'الرياض');
+      if (mounted) setState(() => _cityName = 'Riyadh');
     }
   }
 
@@ -515,20 +535,17 @@ class _InfoCardsRowState extends State<_InfoCardsRow> {
               (address['town'] as String?) ??
               (address['village'] as String?) ??
               (address['state'] as String?) ??
-              'موقعك الحالي';
+              (AppStrings.of(context).isAr ? 'موقعك الحالي' : 'Your Location');
         }
       }
     } catch (_) {}
-    return 'موقعك الحالي';
+    return AppStrings.of(context).isAr ? 'موقعك الحالي' : 'Your Location';
   }
 
-  String _label(int c, [String city = 'الرياض']) {
-    if (c == 0) return 'مشمس صافٍ • $city';
-    if (c <= 3) return 'غائم جزئياً • $city';
-    if (c <= 48) return 'ضبابي • $city';
-    if (c <= 67) return 'ممطر • $city';
-    if (c <= 77) return 'ثلجي • $city';
-    return 'عواصف رعدية • $city';
+  String _label(int c, [String city = '']) {
+    final s = AppStrings.of(context);
+    final cityName = city.isEmpty ? s.riyadh : city;
+    return s.weatherLabel(c, cityName);
   }
 
   IconData _icon(int c) {
@@ -561,25 +578,35 @@ class _InfoCardsRowState extends State<_InfoCardsRow> {
           children: [
             // ── Live Clock ──
             Expanded(
-              child: _InfoCard(
-                icon: Icons.access_time_rounded,
-                iconColor: AppColors.primary,
-                iconBgColor: AppColors.primaryContainer,
-                title: DateFormat('hh:mm:ss a').format(_now),
-                subtitle:
-                    '${AppUtils.getDayInArabic()}، ${_now.day} ${AppUtils.getMonthInArabic(_now.month)} ${_now.year}',
-              ),
+              child: Builder(builder: (ctx) {
+                final s = AppStrings.of(ctx);
+                final separator = s.isAr ? '،' : ',';
+                return _InfoCard(
+                  icon: Icons.access_time_rounded,
+                  iconColor: AppColors.primary,
+                  iconBgColor: AppColors.primaryContainer,
+                  title: DateFormat('hh:mm:ss a').format(_now),
+                  subtitle:
+                      '${s.dayName}$separator ${_now.day} ${s.monthName(_now.month)} ${_now.year}',
+                );
+              }),
             ),
             const SizedBox(width: AppSpacing.md),
             // ── Live Weather ──
             Expanded(
-              child: _InfoCard(
-                icon: _weatherIcon,
-                iconColor: _weatherColor,
-                iconBgColor: AppColors.warningLight,
-                title: _temp,
-                subtitle: _condition,
-              ),
+              child: Builder(builder: (ctx) {
+                final s = AppStrings.of(ctx);
+                final condition = _weatherCode >= 0
+                    ? s.weatherLabel(_weatherCode, _cityName.isNotEmpty ? _cityName : s.riyadh)
+                    : s.weatherLoading;
+                return _InfoCard(
+                  icon: _weatherIcon,
+                  iconColor: _weatherColor,
+                  iconBgColor: AppColors.warningLight,
+                  title: _temp,
+                  subtitle: condition,
+                );
+              }),
             ),
           ],
         ),
@@ -665,44 +692,45 @@ class _QuickActionsGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = AppStrings.of(context);
     final items = [
       _QuickActionItem(
-        label: 'الموارد البشرية',
+        label: s.hrLabel,
         icon: Icons.people_alt_outlined,
         color: AppColors.hrColor,
         lightColor: AppColors.hrColorLight,
         route: RouteNames.hr,
       ),
       _QuickActionItem(
-        label: 'تقنية المعلومات',
+        label: s.itLabel,
         icon: Icons.computer_outlined,
         color: AppColors.itColor,
         lightColor: AppColors.itColorLight,
         route: RouteNames.it,
       ),
       _QuickActionItem(
-        label: 'الأخبار',
+        label: s.newsLabel,
         icon: Icons.newspaper_outlined,
         color: AppColors.newsColor,
         lightColor: AppColors.newsColorLight,
         route: RouteNames.newsList,
       ),
       _QuickActionItem(
-        label: 'الفعاليات',
+        label: s.eventsLabel,
         icon: Icons.event_outlined,
         color: AppColors.eventsColor,
         lightColor: AppColors.eventsColorLight,
         route: RouteNames.eventsList,
       ),
       _QuickActionItem(
-        label: 'مزاجي',
+        label: s.moodLabel,
         icon: Icons.sentiment_satisfied_outlined,
         color: AppColors.moodColor,
         lightColor: AppColors.moodColorLight,
         route: RouteNames.mood,
       ),
       _QuickActionItem(
-        label: 'المساعد الذكي',
+        label: s.chatbotLabel,
         icon: Icons.smart_toy_outlined,
         color: AppColors.chatbotColor,
         lightColor: AppColors.chatbotColorLight,
@@ -786,14 +814,14 @@ class _CeoMessageCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'كلمة المدير العام',
+                      AppStrings.of(context).ceoMessage,
                       style: AppTypography.labelLarge.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                     Text(
-                      'رسالة خاصة للموظفين',
+                      AppStrings.of(context).ceoMessageSubtitle,
                       style: AppTypography.labelSmall.copyWith(
                         color: Colors.white.withOpacity(0.7),
                       ),

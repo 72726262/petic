@@ -5,7 +5,8 @@ import 'package:employee_portal/core/utils/app_constants.dart';
 
 /// ThemeCubit — persists and toggles app theme (light/dark)
 class ThemeCubit extends Cubit<ThemeMode> {
-  ThemeCubit() : super(ThemeMode.system);
+  // Default to light theme on first run
+  ThemeCubit() : super(ThemeMode.light);
 
   static const _key = AppConstants.prefThemeMode;
 
@@ -18,7 +19,8 @@ class ThemeCubit extends Cubit<ThemeMode> {
     } else if (saved == 'light') {
       emit(ThemeMode.light);
     } else {
-      emit(ThemeMode.system);
+      // Default to light if no saved preference
+      emit(ThemeMode.light);
     }
   }
 

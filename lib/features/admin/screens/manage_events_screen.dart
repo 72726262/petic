@@ -7,6 +7,7 @@ import 'package:employee_portal/core/theme/app_radius.dart';
 import 'package:employee_portal/core/theme/app_shadows.dart';
 import 'package:employee_portal/core/utils/app_constants.dart';
 import 'package:employee_portal/core/utils/app_utils.dart';
+import 'package:employee_portal/core/utils/app_strings.dart';
 import 'package:employee_portal/core/animations/app_animations.dart';
 import 'package:employee_portal/core/error_handling/error_handler.dart';
 import 'package:employee_portal/features/events/models/event_model.dart';
@@ -49,7 +50,7 @@ class _ManageEventsScreenState extends State<ManageEventsScreen> {
       });
     } catch (_) {
       if (mounted) {
-        ErrorHandler.showErrorSnackbar(context, 'فشل تحميل الفعاليات.');
+        ErrorHandler.showErrorSnackbar(context, AppStrings.of(context).isAr ? 'فشل تحميل الفعاليات.' : 'Failed to load events.');
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -57,33 +58,37 @@ class _ManageEventsScreenState extends State<ManageEventsScreen> {
   }
 
   Future<void> _deleteEvent(String id) async {
-    final confirmed = await _confirm('هل تريد حذف هذه الفعالية؟');
+    final s = AppStrings.of(context);
+    final confirmed = await _confirm(s.isAr ? 'هل تريد حذف هذه الفعالية؟' : 'Delete this event?');
     if (!confirmed) return;
     try {
       await _client.from(AppConstants.eventsTable).delete().eq('id', id);
-      ErrorHandler.showSuccessSnackbar(context, 'تم حذف الفعالية.');
+      ErrorHandler.showSuccessSnackbar(context, s.isAr ? 'تم حذف الفعالية.' : 'Event deleted.');
       _fetchEvents();
     } catch (_) {
-      ErrorHandler.showErrorSnackbar(context, 'فشل حذف الفعالية.');
+      ErrorHandler.showErrorSnackbar(context, s.isAr ? 'فشل حذف الفعالية.' : 'Failed to delete event.');
     }
   }
 
   Future<bool> _confirm(String msg) async =>
       await showDialog<bool>(
             context: context,
-            builder: (ctx) => AlertDialog(
-              title: const Text('تأكيد'),
-              content: Text(msg),
-              actions: [
-                TextButton(
-                    onPressed: () => Navigator.pop(ctx, false),
-                    child: const Text('إلغاء')),
-                TextButton(
-                    onPressed: () => Navigator.pop(ctx, true),
-                    child: Text('تأكيد',
-                        style: TextStyle(color: AppColors.error))),
-              ],
-            ),
+            builder: (ctx) {
+              final s = AppStrings.of(ctx);
+              return AlertDialog(
+                title: Text(s.isAr ? 'تأكيد' : 'Confirm'),
+                content: Text(msg),
+                actions: [
+                  TextButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: Text(s.cancel)),
+                  TextButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      child: Text(s.confirm,
+                          style: TextStyle(color: AppColors.error))),
+                ],
+              );
+            },
           ) ??
       false;
 
@@ -107,23 +112,24 @@ class _ManageEventsScreenState extends State<ManageEventsScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    final s = AppStrings.of(context);
     return Scaffold(
-      appBar: const CustomAppBar(
-        title: 'إدارة الفعاليات',
+      appBar: CustomAppBar(
+        title: s.manageEvents,
         showBack: true,
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showAddEditSheet(),
         backgroundColor: AppColors.eventsColor,
         icon: const Icon(Icons.add_rounded, color: Colors.white),
-        label: Text('فعالية جديدة',
+        label: Text(s.isAr ? 'فعالية جديدة' : 'New Event',
             style: AppTypography.labelMedium.copyWith(color: Colors.white)),
       ),
       body: _loading
           ? const LoadingWidget()
           : _events.isEmpty
-              ? const EmptyStateWidget(
-                  title: 'لا توجد فعاليات.',
+              ? EmptyStateWidget(
+                  title: s.noEventsAvailable,
                   icon: Icons.event_outlined)
               : RefreshIndicator(
                   onRefresh: _fetchEvents,
@@ -369,35 +375,45 @@ class _EventFormSheetState extends State<_EventFormSheet> {
               ),
               const SizedBox(height: AppSpacing.lg),
 
-              Text(
-                widget.event == null ? 'فعالية جديدة' : 'تعديل الفعالية',
-                style: AppTypography.headlineSmall,
-              ),
+              Builder(builder: (ctx) {
+                final s = AppStrings.of(ctx);
+                return Text(
+                  widget.event == null
+                    ? (s.isAr ? 'فعالية جديدة' : 'New Event')
+                    : (s.isAr ? 'تعديل الفعالية' : 'Edit Event'),
+                  style: AppTypography.headlineSmall,
+                );
+              }),
               const SizedBox(height: AppSpacing.xl),
 
-              AppTextField(
-                controller: _titleCtrl,
-                label: 'العنوان',
-                hint: 'أدخل عنوان الفعالية',
-                validator: (v) => v == null || v.isEmpty
-                    ? 'العنوان مطلوب'
-                    : null,
-              ),
-              const SizedBox(height: AppSpacing.md),
-
-              AppTextField(
-                controller: _descCtrl,
-                label: 'الوصف (اختياري)',
-                hint: 'وصف الفعالية',
-                maxLines: 3,
-              ),
-              const SizedBox(height: AppSpacing.md),
-
-              AppTextField(
-                controller: _locationCtrl,
-                label: 'الموقع (اختياري)',
-                hint: 'قاعة الاجتماعات، الطابق ...',
-              ),
+              Builder(builder: (ctx) {
+                final s = AppStrings.of(ctx);
+                return Column(
+                  children: [
+                    AppTextField(
+                      controller: _titleCtrl,
+                      label: s.eventTitle,
+                      hint: s.isAr ? 'أدخل عنوان الفعالية' : 'Enter event title',
+                      validator: (v) => v == null || v.isEmpty
+                          ? s.isAr ? 'العنوان مطلوب' : 'Title is required'
+                          : null,
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    AppTextField(
+                      controller: _descCtrl,
+                      label: s.isAr ? 'الوصف (اختياري)' : 'Description (optional)',
+                      hint: s.eventDescription,
+                      maxLines: 3,
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    AppTextField(
+                      controller: _locationCtrl,
+                      label: s.isAr ? 'الموقع (اختياري)' : 'Location (optional)',
+                      hint: s.isAr ? 'قاعة الاجتماعات، الطابق ...' : 'Meeting room, Floor ...',
+                    ),
+                  ],
+                );
+              }),
               const SizedBox(height: AppSpacing.md),
 
               // Date picker
@@ -445,8 +461,11 @@ class _EventFormSheetState extends State<_EventFormSheet> {
                         const Icon(Icons.how_to_vote_outlined,
                             color: AppColors.primary, size: 18),
                         const SizedBox(width: 8),
-                        Text('خيارات التصويت (اختياري)',
-                            style: AppTypography.titleSmall),
+                        Builder(builder: (ctx) {
+                      final s = AppStrings.of(ctx);
+                      return Text(s.isAr ? 'خيارات التصويت (اختياري)' : 'Poll Options (optional)',
+                          style: AppTypography.titleSmall);
+                    }),
                       ],
                     ),
                     const SizedBox(height: AppSpacing.sm),
@@ -461,7 +480,7 @@ class _EventFormSheetState extends State<_EventFormSheet> {
                                 controller: _pollCtrls[i],
                                 style: AppTypography.bodyMedium,
                                 decoration: InputDecoration(
-                                  hintText: 'الخيار ${i + 1}',
+                                   hintText: AppStrings.of(context).isAr ? 'الخيار ${i + 1}' : 'Option ${i + 1}',
                                   filled: true,
                                   fillColor: isDark
                                       ? AppColors.surfaceVariantDark
@@ -493,27 +512,35 @@ class _EventFormSheetState extends State<_EventFormSheet> {
                       );
                     }),
                     // Add option button
-                    TextButton.icon(
-                      onPressed: () => setState(() {
-                        _pollCtrls.add(TextEditingController());
-                      }),
-                      icon: const Icon(Icons.add_circle_outline,
-                          size: 18, color: AppColors.primary),
-                      label: Text('إضافة خيار',
-                          style: AppTypography.labelMedium
-                              .copyWith(color: AppColors.primary)),
-                    ),
+                    Builder(builder: (ctx) {
+                      final s = AppStrings.of(ctx);
+                      return TextButton.icon(
+                        onPressed: () => setState(() {
+                          _pollCtrls.add(TextEditingController());
+                        }),
+                        icon: const Icon(Icons.add_circle_outline,
+                            size: 18, color: AppColors.primary),
+                        label: Text(s.isAr ? 'إضافة خيار' : 'Add Option',
+                            style: AppTypography.labelMedium
+                                .copyWith(color: AppColors.primary)),
+                      );
+                    }),
                   ],
                 ),
               ),
               const SizedBox(height: AppSpacing.xl),
 
-              AppButton.primary(
-                label: widget.event == null ? 'إضافة الفعالية' : 'حفظ التعديلات',
-                icon: Icons.save_rounded,
-                onPressed: _saving ? null : _save,
-                isLoading: _saving,
-              ),
+              Builder(builder: (ctx) {
+                final s = AppStrings.of(ctx);
+                return AppButton.primary(
+                  label: widget.event == null
+                    ? (s.isAr ? 'إضافة الفعالية' : 'Add Event')
+                    : (s.isAr ? 'حفظ التعديلات' : 'Save Changes'),
+                  icon: Icons.save_rounded,
+                  onPressed: _saving ? null : _save,
+                  isLoading: _saving,
+                );
+              }),
             ],
           ),
         ),

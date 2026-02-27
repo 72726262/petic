@@ -1,4 +1,3 @@
-import 'package:device_preview/device_preview.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -7,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:employee_portal/core/router/app_router.dart';
 import 'package:employee_portal/core/theme/app_theme.dart';
 import 'package:employee_portal/core/theme/theme_cubit.dart';
+import 'package:employee_portal/core/locale/locale_cubit.dart';
 import 'package:employee_portal/core/utils/app_constants.dart';
 import 'package:employee_portal/features/auth/cubit/auth_cubit.dart';
 import 'package:employee_portal/features/auth/services/auth_service.dart';
@@ -37,13 +37,8 @@ Future<void> main() async {
     anonKey: AppConstants.supabaseAnonKey,
     debug: false,
   );
-  runApp(
-    DevicePreview(
-      enabled: true,
-      builder: (context) => const EmployeePortalApp(),
-    ),
-  );
-  //runApp(const EmployeePortalApp());
+
+  runApp(const EmployeePortalApp());
 }
 
 class EmployeePortalApp extends StatelessWidget {
@@ -56,6 +51,10 @@ class EmployeePortalApp extends StatelessWidget {
         // Theme — load saved preference at startup
         BlocProvider<ThemeCubit>(
           create: (_) => ThemeCubit()..loadTheme(),
+        ),
+        // Locale — load saved preference at startup
+        BlocProvider<LocaleCubit>(
+          create: (_) => LocaleCubit()..loadLocale(),
         ),
         // Auth
         BlocProvider<AuthCubit>(
@@ -72,38 +71,29 @@ class EmployeePortalApp extends StatelessWidget {
       ],
       child: BlocBuilder<ThemeCubit, ThemeMode>(
         builder: (context, themeMode) {
-          return MaterialApp.router(
-            // ─── Meta ─────────────────────────────────────────────────
-            title: AppConstants.appName,
-            debugShowCheckedModeBanner: false,
-
-            // ─── Localizations (required for Arabic date pickers) ──────
-            localizationsDelegates: const [
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            supportedLocales: const [
-              Locale('ar'),
-              Locale('en'),
-            ],
-            locale: const Locale('ar'),
-
-            // ─── Router ───────────────────────────────────────────────
-            routerConfig: AppRouter.router,
-
-            // ─── Theme ────────────────────────────────────────────────
-            theme: AppTheme.light,
-            darkTheme: AppTheme.dark,
-            themeMode: themeMode,
-
-            // ─── Directionality ───────────────────────────────────────
-            builder: (context, child) {
-              return Directionality(
-                textDirection: TextDirection.rtl,
-                child: NotificationOverlayWrapper(
-                  child: child!,
-                ),
+          return BlocBuilder<LocaleCubit, Locale>(
+            builder: (ctx2, locale) {
+              final isAr = locale.languageCode == 'ar';
+              return MaterialApp.router(
+                title: AppConstants.appName,
+                debugShowCheckedModeBanner: false,
+                localizationsDelegates: const [
+                  GlobalMaterialLocalizations.delegate,
+                  GlobalWidgetsLocalizations.delegate,
+                  GlobalCupertinoLocalizations.delegate,
+                ],
+                supportedLocales: const [Locale('ar'), Locale('en')],
+                locale: locale,
+                routerConfig: AppRouter.router,
+                theme: AppTheme.light,
+                darkTheme: AppTheme.dark,
+                themeMode: themeMode,
+                builder: (context, child) {
+                  return Directionality(
+                    textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
+                    child: NotificationOverlayWrapper(child: child!),
+                  );
+                },
               );
             },
           );

@@ -10,6 +10,7 @@ import 'package:employee_portal/core/theme/app_radius.dart';
 import 'package:employee_portal/core/theme/app_shadows.dart';
 import 'package:employee_portal/core/animations/app_animations.dart';
 import 'package:employee_portal/core/error_handling/error_handler.dart';
+import 'package:employee_portal/core/utils/app_strings.dart';
 import 'package:employee_portal/features/hr/cubit/hr_cubit.dart';
 import 'package:employee_portal/features/hr/cubit/hr_state.dart';
 import 'package:employee_portal/features/hr/models/hr_content_model.dart';
@@ -62,22 +63,22 @@ class _HRViewState extends State<_HRView> {
         builder: (context, state) {
           return Scaffold(
             appBar: CustomAppBar(
-              title: 'الموارد البشرية',
+              title: AppStrings.of(context).hrScreenTitle,
               bottom: TabBar(
                 labelColor: AppColors.hrColor,
                 unselectedLabelColor: AppColors.onSurfaceVariantLight,
                 indicatorColor: AppColors.hrColor,
                 dividerColor: Colors.transparent,
-                tabs: const [
+                tabs: [
                   Tab(
-                      icon: Icon(Icons.policy_outlined, size: 18),
-                      text: 'السياسات'),
+                      icon: const Icon(Icons.policy_outlined, size: 18),
+                      text: AppStrings.of(context).policies),
                   Tab(
-                      icon: Icon(Icons.school_outlined, size: 18),
-                      text: 'التدريب'),
+                      icon: const Icon(Icons.school_outlined, size: 18),
+                      text: AppStrings.of(context).training),
                   Tab(
-                      icon: Icon(Icons.work_outline_rounded, size: 18),
-                      text: 'الوظائف'),
+                      icon: const Icon(Icons.work_outline_rounded, size: 18),
+                      text: AppStrings.of(context).jobs),
                 ],
               ),
             ),
@@ -124,21 +125,21 @@ class _HRViewState extends State<_HRView> {
               children: [
                 _HRList(
                   items: _filter(state.policies),
-                  emptyTitle: 'لا توجد سياسات حاليًا',
+                  emptyTitle: AppStrings.of(context).isAr ? 'لا توجد سياسات حاليًا' : 'No policies available',
                   emptyIcon: Icons.policy_outlined,
                   accentColor: AppColors.hrColor,
                   onRefresh: () => context.read<HRCubit>().loadAll(),
                 ),
                 _HRList(
                   items: _filter(state.trainings),
-                  emptyTitle: 'لا توجد دورات تدريبية حاليًا',
+                  emptyTitle: AppStrings.of(context).isAr ? 'لا توجد دورات تدريبية حاليًا' : 'No training sessions available',
                   emptyIcon: Icons.school_outlined,
                   accentColor: AppColors.primary,
                   onRefresh: () => context.read<HRCubit>().loadAll(),
                 ),
                 _HRList(
                   items: _filter(state.jobs),
-                  emptyTitle: 'لا توجد وظائف شاغرة حاليًا',
+                  emptyTitle: AppStrings.of(context).isAr ? 'لا توجد وظائف شاغرة حاليًا' : 'No open positions available',
                   emptyIcon: Icons.work_outline_rounded,
                   accentColor: AppColors.secondary,
                   onRefresh: () => context.read<HRCubit>().loadAll(),
@@ -212,7 +213,7 @@ class _AnnouncementFab extends StatelessWidget {
             const Icon(Icons.campaign_rounded, color: Colors.white, size: 22),
             const SizedBox(width: 8),
             Text(
-              'إرسال إعلان',
+              AppStrings.of(context).isAr ? 'إرسال إعلان' : 'Send Announcement',
               style: AppTypography.labelLarge.copyWith(color: Colors.white),
             ),
           ],
@@ -268,7 +269,7 @@ class _AnnouncementSheetState extends State<_AnnouncementSheet> {
     setState(() => _sending = true);
     try {
       final fullTitle = _isWarning && _selectedUserName != null
-          ? '⚠️ تحذير لـ $_selectedUserName: $title'
+          ? '⚠️ ${AppStrings.of(context).isAr ? 'تحذير لـ' : 'Warning for'} $_selectedUserName: $title'
           : '📢 $title';
       await _service.sendAnnouncement(
         title: fullTitle,
@@ -278,11 +279,15 @@ class _AnnouncementSheetState extends State<_AnnouncementSheet> {
       if (mounted) {
         Navigator.pop(context);
         ErrorHandler.showSuccessSnackbar(
-            context, 'تم إرسال الإعلان بنجاح وسيظهر للجميع الآن 🎉');
+            context, AppStrings.of(context).isAr
+              ? 'تم إرسال الإعلان بنجاح وسيظهر للجميع الآن 🎉'
+              : 'Announcement sent successfully 🎉');
       }
     } catch (_) {
       if (mounted) {
-        ErrorHandler.showErrorSnackbar(context, 'فشل إرسال الإعلان.');
+        ErrorHandler.showErrorSnackbar(context, AppStrings.of(context).isAr
+          ? 'فشل إرسال الإعلان.'
+          : 'Failed to send announcement.');
         setState(() => _sending = false);
       }
     }
@@ -373,7 +378,7 @@ class _AnnouncementSheetState extends State<_AnnouncementSheet> {
             const SizedBox(height: AppSpacing.md),
             DropdownButtonFormField<String>(
               value: _selectedUserId,
-              hint: const Text('اختر الموظف'),
+              hint: Text(AppStrings.of(context).isAr ? 'اختر الموظف' : 'Select Employee'),
               decoration: InputDecoration(
                 prefixIcon: const Icon(Icons.person_outline),
                 border:
@@ -406,7 +411,7 @@ class _AnnouncementSheetState extends State<_AnnouncementSheet> {
             controller: _titleCtrl,
             style: AppTypography.bodyMedium,
             decoration: InputDecoration(
-              hintText: 'عنوان الإعلان',
+              hintText: AppStrings.of(context).isAr ? 'عنوان الإعلان' : 'Announcement Title',
               border:
                   OutlineInputBorder(borderRadius: AppRadius.lgBorderRadius),
               prefixIcon: const Icon(Icons.title_rounded),
@@ -423,7 +428,7 @@ class _AnnouncementSheetState extends State<_AnnouncementSheet> {
             style: AppTypography.bodyMedium,
             maxLines: 3,
             decoration: InputDecoration(
-              hintText: 'نص الإعلان...',
+              hintText: AppStrings.of(context).isAr ? 'نص الإعلان...' : 'Announcement body...',
               border:
                   OutlineInputBorder(borderRadius: AppRadius.lgBorderRadius),
               contentPadding: const EdgeInsets.all(12),
@@ -438,7 +443,7 @@ class _AnnouncementSheetState extends State<_AnnouncementSheet> {
             child: _sending
                 ? const Center(child: CircularProgressIndicator())
                 : AppButton.primary(
-                    label: 'إرسال الآن 📤',
+                    label: AppStrings.of(context).isAr ? 'إرسال الآن 📤' : 'Send Now 📤',
                     icon: Icons.send_rounded,
                     onPressed: _send,
                   ),
@@ -672,7 +677,7 @@ class _HRCard extends StatelessWidget {
                         ),
                         const SizedBox(width: AppSpacing.xs),
                         Text(
-                          'فتح الملف المرفق',
+                          AppStrings.of(context).isAr ? 'فتح الملف المرفق' : 'Open Attachment',
                           style: AppTypography.labelMedium.copyWith(
                             color: accentColor,
                             decoration: TextDecoration.underline,

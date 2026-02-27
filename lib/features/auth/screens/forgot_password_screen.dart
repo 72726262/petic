@@ -6,9 +6,9 @@ import 'package:employee_portal/core/theme/app_typography.dart';
 import 'package:employee_portal/core/router/route_names.dart';
 import 'package:employee_portal/core/error_handling/error_handler.dart';
 import 'package:employee_portal/core/utils/app_utils.dart';
+import 'package:employee_portal/core/utils/app_strings.dart';
 import 'package:employee_portal/features/auth/cubit/auth_cubit.dart';
 import 'package:employee_portal/features/auth/cubit/auth_state.dart';
-import 'package:employee_portal/shared/widgets/app_text_field.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -93,7 +93,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
         if (state is AuthPasswordResetSent) {
           ErrorHandler.showSuccessSnackbar(
             context,
-            'تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني',
+            AppStrings.of(context).resetEmailSent,
           );
           context.go(RouteNames.login);
         } else if (state is AuthError) {
@@ -162,34 +162,16 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                         child: Column(
                           children: [
                             Container(
-                              width: 80,
-                              height: 80,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    AppColors.warning,
-                                    AppColors.warningDark,
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(20),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppColors.warning.withOpacity(0.4),
-                                    blurRadius: 30,
-                                    spreadRadius: 0,
-                                    offset: const Offset(0, 12),
-                                  ),
-                                ],
-                              ),
-                              child: const Icon(
-                                Icons.lock_reset_rounded,
-                                color: Colors.white,
-                                size: 40,
+                              width: 130,
+                              height: 130,
+                              child: Image.asset(
+                                'assets/images/app_logo_final.png',
+                                fit: BoxFit.contain,
                               ),
                             ),
                             const SizedBox(height: 20),
                             Text(
-                              'نسيت كلمة المرور؟',
+                              AppStrings.of(context).forgotPasswordTitle,
                               style: AppTypography.headlineMedium.copyWith(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w700,
@@ -197,7 +179,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              'أدخل بريدك الإلكتروني لإرسال رابط إعادة التعيين',
+                              AppStrings.of(context).forgotPasswordSubtitle,
                               style: AppTypography.bodyMedium.copyWith(
                                 color: Colors.white.withOpacity(0.6),
                               ),
@@ -237,7 +219,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                                   style: AppTypography.bodyMedium
                                       .copyWith(color: Colors.white),
                                   decoration: InputDecoration(
-                                    hintText: 'البريد الإلكتروني',
+                                    hintText: AppStrings.of(context).emailHint,
                                     hintStyle:
                                         AppTypography.bodyMedium.copyWith(
                                       color: Colors.white.withOpacity(0.4),
@@ -309,7 +291,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            'تذكرت كلمة المرور؟ ',
+                            AppStrings.of(context).isAr
+                                ? 'تذكرت كلمة المرور؟ '
+                                : 'Remember your password? ',
                             style: AppTypography.bodyMedium.copyWith(
                               color: Colors.white.withOpacity(0.6),
                             ),
@@ -317,7 +301,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                           GestureDetector(
                             onTap: () => context.push(RouteNames.login),
                             child: Text(
-                              'تسجيل الدخول',
+                              AppStrings.of(context).signIn,
                               style: AppTypography.bodyMedium.copyWith(
                                 color: AppColors.primaryLight,
                                 fontWeight: FontWeight.w600,
@@ -393,7 +377,7 @@ class _ResetButton extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'إرسال رابط الاستعادة',
+                      AppStrings.of(context).sendResetLink,
                       style: AppTypography.buttonText.copyWith(
                         color: Colors.white,
                         fontSize: 16,

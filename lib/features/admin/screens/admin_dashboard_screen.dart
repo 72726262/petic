@@ -8,6 +8,7 @@ import 'package:employee_portal/core/theme/app_radius.dart';
 import 'package:employee_portal/core/theme/app_shadows.dart';
 import 'package:employee_portal/core/router/route_names.dart';
 import 'package:employee_portal/core/animations/app_animations.dart';
+import 'package:employee_portal/core/utils/app_strings.dart';
 import 'package:employee_portal/features/auth/cubit/auth_cubit.dart';
 import 'package:employee_portal/features/auth/cubit/auth_state.dart';
 import 'package:employee_portal/features/auth/models/user_model.dart';
@@ -60,47 +61,47 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       });
   }
 
-  List<_AdminAction> _getActions(UserModel user) {
+  List<_AdminAction> _getActions(BuildContext context, UserModel user) {
+    final s = AppStrings.of(context);
     final actions = <_AdminAction>[];
     if (user.isAdmin) {
-      actions.add(const _AdminAction(
-        label: 'إدارة الأخبار',
-        subtitle: 'إضافة وتعديل وحذف الأخبار',
+      actions.add(_AdminAction(
+        label: s.isAr ? 'إدارة الأخبار' : 'Manage News',
+        subtitle: s.isAr ? 'إضافة وتعديل وحذف الأخبار' : 'Add, edit and delete news',
         icon: Icons.newspaper_outlined,
         color: AppColors.newsColor,
         route: RouteNames.adminManageNews,
       ));
-      actions.add(const _AdminAction(
-        label: 'إدارة الفعاليات',
-        subtitle: 'إدارة الفعاليات والتصويتات',
+      actions.add(_AdminAction(
+        label: s.isAr ? 'إدارة الفعاليات' : 'Manage Events',
+        subtitle: s.isAr ? 'إدارة الفعاليات والتصويتات' : 'Manage events and polls',
         icon: Icons.event_outlined,
         color: AppColors.eventsColor,
         route: RouteNames.adminManageEvents,
       ));
     }
     if (user.isHR) {
-      actions.add(const _AdminAction(
-        label: 'إدارة الموارد البشرية',
-        subtitle: 'السياسات والتدريب والوظائف',
+      actions.add(_AdminAction(
+        label: s.manageHR,
+        subtitle: s.isAr ? 'السياسات والتدريب والوظائف' : 'Policies, training and jobs',
         icon: Icons.people_outline_rounded,
         color: AppColors.hrColor,
         route: RouteNames.adminManageHR,
       ));
     }
     if (user.isIT) {
-      actions.add(const _AdminAction(
-        label: 'إدارة تقنية المعلومات',
-        subtitle: 'التنبيهات والأدلة والسياسات',
+      actions.add(_AdminAction(
+        label: s.manageIT,
+        subtitle: s.isAr ? 'التنبيهات والأدلة والسياسات' : 'Alerts, guides and policies',
         icon: Icons.computer_outlined,
         color: AppColors.itColor,
         route: RouteNames.adminManageIT,
       ));
     }
-    // Create account tile — visible to Admin and HR only
     if (user.isAdmin || user.isHR) {
-      actions.add(const _AdminAction(
-        label: 'إنشاء حساب جديد',
-        subtitle: 'إضافة موظف جديد للنظام',
+      actions.add(_AdminAction(
+        label: s.isAr ? 'إنشاء حساب جديد' : 'Create New Account',
+        subtitle: s.isAr ? 'إضافة موظف جديد للنظام' : 'Add a new employee to the system',
         icon: Icons.person_add_rounded,
         color: AppColors.success,
         route: RouteNames.signup,
@@ -112,17 +113,18 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final s = AppStrings.of(context);
 
     return Scaffold(
-      appBar: const CustomAppBar(
-        title: 'لوحة تحكم المسؤول',
+      appBar: CustomAppBar(
+        title: s.adminDashboard,
         showBack: true,
       ),
       body: BlocBuilder<AuthCubit, AuthState>(
         builder: (context, state) {
           if (state is! AuthAuthenticated) return const SizedBox.shrink();
           final user = state.user;
-          final actions = _getActions(user);
+          final actions = _getActions(context, user);
 
           return RefreshIndicator(
             onRefresh: _loadStats,
@@ -135,7 +137,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('نظرة عامة', style: AppTypography.titleMedium),
+                        Text(s.isAr ? 'نظرة عامة' : 'Overview',
+                            style: AppTypography.titleMedium),
                         const SizedBox(height: AppSpacing.md),
                         if (_loadingStats)
                           const Center(child: CircularProgressIndicator())
@@ -149,7 +152,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                             childAspectRatio: 2.0,
                             children: [
                               _LiveStatCard(
-                                label: 'الموظفون',
+                                label: s.employees,
                                 count: '${_stats?.usersCount ?? 0}',
                                 icon: Icons.people_outline_rounded,
                                 color: AppColors.primary,
@@ -157,7 +160,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                                     context.push(RouteNames.adminEmployees),
                               ),
                               _LiveStatCard(
-                                label: 'الأخبار',
+                                label: s.news,
                                 count: '${_stats?.newsCount ?? 0}',
                                 icon: Icons.newspaper_outlined,
                                 color: AppColors.newsColor,
@@ -165,7 +168,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                                     context.push(RouteNames.adminManageNews),
                               ),
                               _LiveStatCard(
-                                label: 'الفعاليات',
+                                label: s.events,
                                 count: '${_stats?.eventsCount ?? 0}',
                                 icon: Icons.event_outlined,
                                 color: AppColors.eventsColor,
@@ -173,7 +176,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                                     context.push(RouteNames.adminManageEvents),
                               ),
                               _LiveStatCard(
-                                label: 'إعدادات',
+                                label: s.settings,
                                 count: '⚙',
                                 icon: Icons.settings_outlined,
                                 color: AppColors.secondary,
@@ -189,7 +192,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 ],
 
                 // ─── Action Tiles ────────────────────────────────────
-                Text('إدارة المحتوى', style: AppTypography.titleMedium),
+                Text(s.isAr ? 'إدارة المحتوى' : 'Content Management',
+                    style: AppTypography.titleMedium),
                 const SizedBox(height: AppSpacing.md),
 
                 ...actions.asMap().entries.map(

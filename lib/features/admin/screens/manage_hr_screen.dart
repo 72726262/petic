@@ -6,6 +6,7 @@ import 'package:employee_portal/core/theme/app_spacing.dart';
 import 'package:employee_portal/core/theme/app_radius.dart';
 import 'package:employee_portal/core/theme/app_shadows.dart';
 import 'package:employee_portal/core/utils/app_constants.dart';
+import 'package:employee_portal/core/utils/app_strings.dart';
 import 'package:employee_portal/core/animations/app_animations.dart';
 import 'package:employee_portal/core/error_handling/error_handler.dart';
 import 'package:employee_portal/features/hr/models/hr_content_model.dart';
@@ -70,7 +71,7 @@ class _ManageHrScreenState extends State<ManageHrScreen>
       });
     } catch (_) {
       if (mounted) {
-        ErrorHandler.showErrorSnackbar(context, 'فشل تحميل بيانات HR.');
+        ErrorHandler.showErrorSnackbar(context, AppStrings.of(context).isAr ? 'فشل تحميل بيانات HR.' : 'Failed to load HR data.');
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -78,33 +79,37 @@ class _ManageHrScreenState extends State<ManageHrScreen>
   }
 
   Future<void> _delete(String id) async {
-    final ok = await _confirm('هل تريد حذف هذا العنصر؟');
+    final s = AppStrings.of(context);
+    final ok = await _confirm(s.isAr ? 'هل تريد حذف هذا العنصر؟' : 'Delete this item?');
     if (!ok) return;
     try {
       await _client.from(AppConstants.hrContentTable).delete().eq('id', id);
-      ErrorHandler.showSuccessSnackbar(context, 'تم الحذف.');
+      ErrorHandler.showSuccessSnackbar(context, s.deleteSuccess);
       _fetchAll();
     } catch (_) {
-      ErrorHandler.showErrorSnackbar(context, 'فشل الحذف.');
+      ErrorHandler.showErrorSnackbar(context, s.error);
     }
   }
 
   Future<bool> _confirm(String msg) async =>
       await showDialog<bool>(
             context: context,
-            builder: (ctx) => AlertDialog(
-              title: const Text('تأكيد'),
-              content: Text(msg),
-              actions: [
-                TextButton(
-                    onPressed: () => Navigator.pop(ctx, false),
-                    child: const Text('إلغاء')),
-                TextButton(
-                    onPressed: () => Navigator.pop(ctx, true),
-                    child: Text('حذف',
-                        style: TextStyle(color: AppColors.error))),
-              ],
-            ),
+            builder: (ctx) {
+              final s = AppStrings.of(ctx);
+              return AlertDialog(
+                title: Text(s.isAr ? 'تأكيد' : 'Confirm'),
+                content: Text(msg),
+                actions: [
+                  TextButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: Text(s.cancel)),
+                  TextButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      child: Text(s.delete,
+                          style: TextStyle(color: AppColors.error))),
+                ],
+              );
+            },
           ) ??
       false;
 
@@ -128,19 +133,20 @@ class _ManageHrScreenState extends State<ManageHrScreen>
   Widget build(BuildContext context) {
     final items = _filteredItems;
 
+    final s = AppStrings.of(context);
     return Scaffold(
       appBar: CustomAppBar(
-        title: 'إدارة الموارد البشرية',
+        title: s.manageHR,
         showBack: true,
         bottom: TabBar(
           controller: _tabCtrl,
           labelColor: AppColors.hrColor,
           unselectedLabelColor: AppColors.onSurfaceVariantLight,
           indicatorColor: AppColors.hrColor,
-          tabs: const [
-            Tab(text: 'السياسات'),
-            Tab(text: 'التدريب'),
-            Tab(text: 'الوظائف'),
+          tabs: [
+            Tab(text: s.policies),
+            Tab(text: s.training),
+            Tab(text: s.jobs),
           ],
         ),
       ),
@@ -148,14 +154,14 @@ class _ManageHrScreenState extends State<ManageHrScreen>
         onPressed: () => _showForm(),
         backgroundColor: AppColors.hrColor,
         icon: const Icon(Icons.add_rounded, color: Colors.white),
-        label: Text('إضافة',
+        label: Text(s.add,
             style: AppTypography.labelMedium.copyWith(color: Colors.white)),
       ),
       body: _loading
           ? const LoadingWidget()
           : items.isEmpty
-              ? const EmptyStateWidget(
-                  title: 'لا توجد عناصر.',
+              ? EmptyStateWidget(
+                  title: s.noData,
                   icon: Icons.people_outline_rounded)
               : RefreshIndicator(
                   onRefresh: _fetchAll,
@@ -217,7 +223,7 @@ class _ManageHrScreenState extends State<ManageHrScreen>
                                               size: 12,
                                               color: AppColors.hrColor),
                                           const SizedBox(width: 4),
-                                          Text('مرفق',
+                                           Text(AppStrings.of(context).isAr ? 'مرفق' : 'Attachment',
                                               style: AppTypography.labelSmall
                                                   .copyWith(
                                                       color:
@@ -366,74 +372,86 @@ class _HRFormSheetState extends State<_HRFormSheet> {
                 ),
               ),
               const SizedBox(height: AppSpacing.lg),
-              Text(
-                widget.item == null ? 'إضافة عنصر' : 'تعديل العنصر',
-                style: AppTypography.headlineSmall,
-              ),
+              Builder(builder: (ctx) {
+                final s = AppStrings.of(ctx);
+                return Text(
+                  widget.item == null
+                    ? (s.isAr ? 'إضافة عنصر' : 'Add Item')
+                    : (s.isAr ? 'تعديل العنصر' : 'Edit Item'),
+                  style: AppTypography.headlineSmall,
+                );
+              }),
               const SizedBox(height: AppSpacing.xl),
 
               // Category selector
-              SegmentedButton<HRCategory>(
-                segments: const [
-                  ButtonSegment(
-                      value: HRCategory.policy, label: Text('سياسة')),
-                  ButtonSegment(
-                      value: HRCategory.training, label: Text('تدريب')),
-                  ButtonSegment(value: HRCategory.job, label: Text('وظيفة')),
-                ],
-                selected: {_category},
-                onSelectionChanged: (s) =>
-                    setState(() => _category = s.first),
-                style: ButtonStyle(
-                  backgroundColor:
-                      WidgetStateProperty.resolveWith((states) {
-                    if (states.contains(WidgetState.selected)) {
-                      return AppColors.hrColor;
-                    }
-                    return null;
-                  }),
-                  foregroundColor:
-                      WidgetStateProperty.resolveWith((states) {
-                    if (states.contains(WidgetState.selected)) {
-                      return Colors.white;
-                    }
-                    return null;
-                  }),
-                ),
-              ),
+              Builder(builder: (ctx) {
+                final s = AppStrings.of(ctx);
+                return SegmentedButton<HRCategory>(
+                  segments: [
+                    ButtonSegment(
+                        value: HRCategory.policy, label: Text(s.isAr ? 'سياسة' : 'Policy')),
+                    ButtonSegment(
+                        value: HRCategory.training, label: Text(s.isAr ? 'تدريب' : 'Training')),
+                    ButtonSegment(value: HRCategory.job, label: Text(s.isAr ? 'وظيفة' : 'Job')),
+                  ],
+                  selected: {_category},
+                  onSelectionChanged: (s2) =>
+                      setState(() => _category = s2.first),
+                  style: ButtonStyle(
+                    backgroundColor:
+                        WidgetStateProperty.resolveWith((states) {
+                      if (states.contains(WidgetState.selected)) {
+                        return AppColors.hrColor;
+                      }
+                      return null;
+                    }),
+                    foregroundColor:
+                        WidgetStateProperty.resolveWith((states) {
+                      if (states.contains(WidgetState.selected)) {
+                        return Colors.white;
+                      }
+                      return null;
+                    }),
+                  ),
+                );
+              }),
               const SizedBox(height: AppSpacing.md),
 
-              AppTextField(
-                controller: _titleCtrl,
-                label: 'العنوان',
-                hint: 'عنوان العنصر',
-                validator: (v) =>
-                    v == null || v.isEmpty ? 'العنوان مطلوب' : null,
-              ),
-              const SizedBox(height: AppSpacing.md),
-
-              AppTextField(
-                controller: _descCtrl,
-                label: 'الوصف (اختياري)',
-                hint: 'وصف مختصر',
-                maxLines: 3,
-              ),
-              const SizedBox(height: AppSpacing.md),
-
-              AppTextField(
-                controller: _urlCtrl,
-                label: 'رابط الملف (اختياري)',
-                hint: 'https://...',
-                keyboardType: TextInputType.url,
-              ),
-              const SizedBox(height: AppSpacing.xl),
-
-              AppButton.primary(
-                label: widget.item == null ? 'إضافة' : 'حفظ',
-                icon: Icons.save_rounded,
-                onPressed: _saving ? null : _save,
-                isLoading: _saving,
-              ),
+              Builder(builder: (ctx) {
+                final s = AppStrings.of(ctx);
+                return Column(
+                  children: [
+                    AppTextField(
+                      controller: _titleCtrl,
+                      label: s.isAr ? 'العنوان' : 'Title',
+                      hint: s.isAr ? 'عنوان العنصر' : 'Item title',
+                      validator: (v) =>
+                          v == null || v.isEmpty ? (s.isAr ? 'العنوان مطلوب' : 'Title is required') : null,
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    AppTextField(
+                      controller: _descCtrl,
+                      label: s.isAr ? 'الوصف (اختياري)' : 'Description (optional)',
+                      hint: s.isAr ? 'وصف مختصر' : 'Brief description',
+                      maxLines: 3,
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    AppTextField(
+                      controller: _urlCtrl,
+                      label: s.isAr ? 'رابط الملف (اختياري)' : 'File URL (optional)',
+                      hint: 'https://...',
+                      keyboardType: TextInputType.url,
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+                    AppButton.primary(
+                      label: widget.item == null ? s.add : s.save,
+                      icon: Icons.save_rounded,
+                      onPressed: _saving ? null : _save,
+                      isLoading: _saving,
+                    ),
+                  ],
+                );
+              }),
             ],
           ),
         ),

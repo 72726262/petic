@@ -51,12 +51,15 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.14.3
+  image: ^4.8.0
 
 # ─── Launcher Icons Config ────────────────────────────────────────
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/images/app_logo.jpg"
+  image_path: "assets/images/app_logo_final.png"
+  adaptive_icon_background: "#18182B" # Dark sleek theme for the background
+  adaptive_icon_foreground: "assets/images/app_logo_final.png"
   min_sdk_android: 21
   web:
     generate: false

@@ -6,6 +6,7 @@ import 'package:employee_portal/core/theme/app_spacing.dart';
 import 'package:employee_portal/core/theme/app_radius.dart';
 import 'package:employee_portal/core/theme/app_shadows.dart';
 import 'package:employee_portal/core/utils/app_utils.dart';
+import 'package:employee_portal/core/utils/app_strings.dart';
 import 'package:employee_portal/core/error_handling/error_handler.dart';
 import 'package:employee_portal/features/auth/cubit/auth_cubit.dart';
 import 'package:employee_portal/features/auth/cubit/auth_state.dart';
@@ -123,7 +124,7 @@ class _EventDetailViewState extends State<_EventDetailView> {
                     ),
                   ),
                   title: Text(
-                    'تفاصيل الفعالية',
+                    AppStrings.of(context).isAr ? 'تفاصيل الفعالية' : 'Event Details',
                     style: AppTypography.titleMedium
                         .copyWith(color: Colors.white),
                   ),
@@ -323,12 +324,14 @@ class _PollSection extends StatelessWidget {
               const Icon(Icons.how_to_vote_outlined,
                   color: AppColors.primary, size: 20),
               const SizedBox(width: 8),
-              Text('التصويت',
+              Text(AppStrings.of(context).vote,
                   style: AppTypography.titleSmall
                       .copyWith(color: AppColors.primary)),
               const Spacer(),
               Text(
-                '$totalVotes صوت',
+                AppStrings.of(context).isAr
+                  ? '$totalVotes صوت'
+                  : '$totalVotes votes',
                 style: AppTypography.labelSmall.copyWith(
                     color: isDark
                         ? AppColors.onSurfaceVariantDark
@@ -421,7 +424,7 @@ class _PollSection extends StatelessWidget {
           if (userVote == null && userId != null) ...[
             const SizedBox(height: AppSpacing.sm),
             AppButton.primary(
-              label: 'تأكيد التصويت',
+              label: AppStrings.of(context).isAr ? 'تأكيد التصويت' : 'Confirm Vote',
               icon: Icons.how_to_vote_rounded,
               onPressed: selectedOption == null ? null : onVote,
             ),
@@ -460,7 +463,7 @@ class _CommentsSection extends StatelessWidget {
             const Icon(Icons.comment_outlined,
                 color: AppColors.primary, size: 20),
             const SizedBox(width: 8),
-            Text('التعليقات',
+            Text(AppStrings.of(context).comments,
                 style: AppTypography.titleSmall
                     .copyWith(color: AppColors.primary)),
             const Spacer(),
@@ -487,7 +490,7 @@ class _CommentsSection extends StatelessWidget {
                   maxLines: null,
                   style: AppTypography.bodyMedium,
                   decoration: InputDecoration(
-                    hintText: 'اكتب تعليقك...',
+                    hintText: AppStrings.of(context).addComment,
                     filled: true,
                     fillColor: isDark
                         ? AppColors.surfaceDark
@@ -525,7 +528,9 @@ class _CommentsSection extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.all(AppSpacing.xl),
               child: Text(
-                'لا توجد تعليقات بعد. كن أول من يعلّق!',
+                AppStrings.of(context).isAr
+                  ? 'لا توجد تعليقات بعد. كن أول من يعلّق!'
+                  : 'No comments yet. Be the first to comment!',
                 style: AppTypography.bodySmall.copyWith(
                   color: isDark
                       ? AppColors.onSurfaceVariantDark

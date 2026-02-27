@@ -7,6 +7,7 @@ import 'package:employee_portal/core/theme/app_spacing.dart';
 import 'package:employee_portal/core/router/route_names.dart';
 import 'package:employee_portal/core/error_handling/error_handler.dart';
 import 'package:employee_portal/core/utils/app_utils.dart';
+import 'package:employee_portal/core/utils/app_strings.dart';
 import 'package:employee_portal/features/auth/cubit/auth_cubit.dart';
 import 'package:employee_portal/features/auth/cubit/auth_state.dart';
 import 'package:employee_portal/shared/widgets/app_button.dart';
@@ -97,6 +98,8 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final s = AppStrings.of(context);
+    final isAr = s.isAr;
 
     return BlocListener<AuthCubit, AuthState>(
       listener: (context, state) {
@@ -187,29 +190,17 @@ class _LoginScreenState extends State<LoginScreen>
                           children: [
                             // App Icon
                             Container(
-                              width: 96,
-                              height: 96,
-                              decoration: BoxDecoration(
-                                gradient: AppColors.primaryGradient,
-                                borderRadius: BorderRadius.circular(24),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppColors.primary.withOpacity(0.4),
-                                    blurRadius: 30,
-                                    spreadRadius: 0,
-                                    offset: const Offset(0, 12),
-                                  ),
-                                ],
-                              ),
-                              child: const Icon(
-                                Icons.business_center_rounded,
-                                color: Colors.white,
-                                size: 48,
+                              width: 150,
+                              height: 150,
+                              child: Image.asset(
+                                'assets/images/app_logo_final.png',
+                                fit: BoxFit.contain,
                               ),
                             ),
+
                             const SizedBox(height: 20),
                             Text(
-                              'البوابة الداخلية',
+                              s.appName,
                               style: AppTypography.headlineMedium.copyWith(
                                 color:
                                     isDark ? Colors.white : AppColors.primary,
@@ -218,7 +209,7 @@ class _LoginScreenState extends State<LoginScreen>
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              'Internal Employee Portal',
+                              s.appSubtitle,
                               style: AppTypography.bodyMedium.copyWith(
                                 color: isDark
                                     ? Colors.white.withOpacity(0.6)
@@ -267,7 +258,7 @@ class _LoginScreenState extends State<LoginScreen>
                               children: [
                                 // Welcome text
                                 Text(
-                                  '${AppUtils.getGreeting()} 👋',
+                                  '${AppUtils.getGreeting(isAr: isAr)} 👋',
                                   style: AppTypography.headlineSmall.copyWith(
                                     color: isDark
                                         ? Colors.white
@@ -276,7 +267,7 @@ class _LoginScreenState extends State<LoginScreen>
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  'سجّل دخولك للمتابعة',
+                                  s.loginSubtitle,
                                   style: AppTypography.bodyMedium.copyWith(
                                     color: isDark
                                         ? Colors.white.withOpacity(0.55)
@@ -290,10 +281,10 @@ class _LoginScreenState extends State<LoginScreen>
                                 _buildDarkTextField(
                                   context: context,
                                   controller: _emailController,
-                                  hint: 'البريد الإلكتروني',
+                                  hint: s.emailHint,
                                   icon: Icons.email_outlined,
                                   keyboardType: TextInputType.emailAddress,
-                                  validator: AppUtils.validateEmail,
+                                  validator: s.validateEmail,
                                 ),
 
                                 const SizedBox(height: 16),
@@ -302,10 +293,10 @@ class _LoginScreenState extends State<LoginScreen>
                                 _buildDarkTextField(
                                   context: context,
                                   controller: _passwordController,
-                                  hint: 'كلمة المرور',
+                                  hint: s.passwordHint,
                                   icon: Icons.lock_outline_rounded,
                                   obscureText: _obscurePassword,
-                                  validator: AppUtils.validatePassword,
+                                  validator: s.validatePassword,
                                   suffixIcon: IconButton(
                                     onPressed: () => setState(() =>
                                         _obscurePassword = !_obscurePassword),
@@ -342,7 +333,7 @@ class _LoginScreenState extends State<LoginScreen>
                                     onTap: () =>
                                         context.push(RouteNames.forgotPassword),
                                     child: Text(
-                                      'نسيت كلمة المرور؟',
+                                      s.forgotPassword,
                                       style: AppTypography.bodySmall.copyWith(
                                         color: AppColors.primaryLight,
                                         fontWeight: FontWeight.w500,
@@ -365,7 +356,7 @@ class _LoginScreenState extends State<LoginScreen>
                     FadeTransition(
                       opacity: _formOpacity,
                       child: Text(
-                        'جميع الحقوق محفوظة © 2025',
+                        s.copyright,
                         style: AppTypography.labelSmall.copyWith(
                           color: isDark
                               ? Colors.white.withOpacity(0.3)
@@ -497,13 +488,16 @@ class _LoginButton extends StatelessWidget {
               : Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      'تسجيل الدخول',
-                      style: AppTypography.buttonText.copyWith(
-                        color: Colors.white,
-                        fontSize: 16,
-                      ),
-                    ),
+                    Builder(builder: (ctx) {
+                      final s = AppStrings.of(ctx);
+                      return Text(
+                        s.login,
+                        style: AppTypography.buttonText.copyWith(
+                          color: Colors.white,
+                          fontSize: 16,
+                        ),
+                      );
+                    }),
                     const SizedBox(width: 8),
                     const Icon(
                       Icons.arrow_forward_rounded,

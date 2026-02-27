@@ -8,6 +8,7 @@ import 'package:employee_portal/core/theme/app_radius.dart';
 import 'package:employee_portal/core/theme/app_shadows.dart';
 import 'package:employee_portal/core/utils/app_constants.dart';
 import 'package:employee_portal/core/utils/app_utils.dart';
+import 'package:employee_portal/core/utils/app_strings.dart';
 import 'package:employee_portal/core/animations/app_animations.dart';
 import 'package:employee_portal/core/error_handling/error_handler.dart';
 import 'package:employee_portal/core/router/route_names.dart';
@@ -49,7 +50,7 @@ class _ManageNewsScreenState extends State<ManageNewsScreen> {
       });
     } catch (_) {
       if (mounted) {
-        ErrorHandler.showErrorSnackbar(context, 'فشل تحميل الأخبار.');
+        ErrorHandler.showErrorSnackbar(context, AppStrings.of(context).isAr ? 'فشل تحميل الأخبار.' : 'Failed to load news.');
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -57,36 +58,41 @@ class _ManageNewsScreenState extends State<ManageNewsScreen> {
   }
 
   Future<void> _deleteNews(String id) async {
-    final confirmed = await _showDeleteConfirm('هل تريد حذف هذا الخبر؟');
+    final s = AppStrings.of(context);
+    final confirmed = await _showDeleteConfirm(
+      s.isAr ? 'هل تريد حذف هذا الخبر؟' : 'Delete this news item?');
     if (!confirmed) return;
 
     try {
       await _client.from(AppConstants.newsTable).delete().eq('id', id);
-      ErrorHandler.showSuccessSnackbar(context, 'تم حذف الخبر.');
+      ErrorHandler.showSuccessSnackbar(context, s.isAr ? 'تم حذف الخبر.' : 'News deleted.');
       _fetchNews();
     } catch (_) {
-      ErrorHandler.showErrorSnackbar(context, 'فشل حذف الخبر.');
+      ErrorHandler.showErrorSnackbar(context, s.isAr ? 'فشل حذف الخبر.' : 'Failed to delete.');
     }
   }
 
   Future<bool> _showDeleteConfirm(String message) async {
     return await showDialog<bool>(
           context: context,
-          builder: (ctx) => AlertDialog(
-            title: const Text('تأكيد الحذف'),
-            content: Text(message),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('إلغاء'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(ctx, true),
-                child: Text('حذف',
-                    style: TextStyle(color: AppColors.error)),
-              ),
-            ],
-          ),
+          builder: (ctx) {
+            final s = AppStrings.of(ctx);
+            return AlertDialog(
+              title: Text(s.isAr ? 'تأكيد الحذف' : 'Confirm Delete'),
+              content: Text(message),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: Text(s.cancel),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: Text(s.delete,
+                      style: TextStyle(color: AppColors.error)),
+                ),
+              ],
+            );
+          },
         ) ??
         false;
   }
@@ -95,9 +101,10 @@ class _ManageNewsScreenState extends State<ManageNewsScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    final s = AppStrings.of(context);
     return Scaffold(
-      appBar: const CustomAppBar(
-        title: 'إدارة الأخبار',
+      appBar: CustomAppBar(
+        title: s.manageNews,
         showBack: true,
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -107,14 +114,14 @@ class _ManageNewsScreenState extends State<ManageNewsScreen> {
         },
         backgroundColor: AppColors.newsColor,
         icon: const Icon(Icons.add_rounded, color: Colors.white),
-        label: Text('خبر جديد',
+        label: Text(s.isAr ? 'خبر جديد' : 'New Article',
             style: AppTypography.labelMedium.copyWith(color: Colors.white)),
       ),
       body: _loading
           ? const LoadingWidget()
           : _news.isEmpty
-              ? const EmptyStateWidget(
-                  title: 'لا توجد أخبار منشورة.',
+              ? EmptyStateWidget(
+                  title: s.noNewsAvailable,
                   icon: Icons.newspaper_outlined)
               : RefreshIndicator(
                   onRefresh: _fetchNews,

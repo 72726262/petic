@@ -10,6 +10,7 @@ import 'package:employee_portal/core/theme/app_radius.dart';
 import 'package:employee_portal/core/theme/app_shadows.dart';
 import 'package:employee_portal/core/router/route_names.dart';
 import 'package:employee_portal/core/utils/app_constants.dart';
+import 'package:employee_portal/core/utils/app_strings.dart';
 import 'package:employee_portal/features/auth/cubit/auth_cubit.dart';
 import 'package:employee_portal/features/auth/cubit/auth_state.dart';
 import 'package:employee_portal/shared/widgets/custom_app_bar.dart';
@@ -70,7 +71,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           .limit(5);
       for (final n in news as List) {
         items.add(_NotifItem(
-          title: 'خبر جديد',
+          title: AppStrings.of(context).isAr ? 'خبر جديد' : 'New Article',
           body: n['title'] as String,
           time: DateTime.parse(n['created_at'] as String),
           icon: Icons.newspaper_outlined,
@@ -87,7 +88,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           .limit(5);
       for (final e in events as List) {
         items.add(_NotifItem(
-          title: 'فعالية جديدة',
+          title: AppStrings.of(context).isAr ? 'فعالية جديدة' : 'New Event',
           body: e['title'] as String,
           time: DateTime.parse(e['created_at'] as String),
           icon: Icons.event_outlined,
@@ -104,7 +105,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           .limit(5);
       for (final h in hrItems as List) {
         items.add(_NotifItem(
-          title: '📢 الموارد البشرية',
+          title: AppStrings.of(context).isAr ? '📢 الموارد البشرية' : '📢 Human Resources',
           body: h['title'] as String,
           time: DateTime.parse(h['created_at'] as String),
           icon: Icons.campaign_rounded,
@@ -121,7 +122,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           .limit(5);
       for (final it in itItems as List) {
         items.add(_NotifItem(
-          title: '💻 تقنية المعلومات',
+          title: AppStrings.of(context).isAr ? '💻 تقنية المعلومات' : '💻 Information Technology',
           body: it['title'] as String,
           time: DateTime.parse(it['created_at'] as String),
           icon: Icons.computer_rounded,
@@ -138,11 +139,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             .order('created_at', ascending: false)
             .limit(5);
         for (final m in moods as List) {
-          final name = (m['users'] as Map?)?['full_name'] ?? 'موظف';
+          final name = (m['users'] as Map?)?['full_name'] ??
+              AppStrings.of(context).employeeFallback;
           final mood = m['mood'] as String? ?? '😐';
+          final isAr = AppStrings.of(context).isAr;
           items.add(_NotifItem(
-            title: 'نشاط موظف',
-            body: '$name سجّل مزاجه: $mood',
+            title: isAr ? 'نشاط موظف' : 'Employee Activity',
+            body: isAr ? '$name سجّل مزاجه: $mood' : '$name submitted mood: $mood',
             time: DateTime.parse(m['created_at'] as String),
             icon: Icons.mood_outlined,
             color: AppColors.secondary,
@@ -165,15 +168,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: const CustomAppBar(
-        title: 'الإشعارات',
+      appBar: CustomAppBar(
+        title: AppStrings.of(context).notificationsTitle,
         showBack: true,
       ),
       body: _loading
           ? const LoadingWidget()
           : _items.isEmpty
-              ? const EmptyStateWidget(
-                  title: 'لا توجد إشعارات',
+              ? EmptyStateWidget(
+                  title: AppStrings.of(context).noNotifications,
                   icon: Icons.notifications_none_rounded,
                 )
               : RefreshIndicator(
@@ -226,7 +229,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                                   AppTypography.titleSmall),
                                         ),
                                         Text(
-                                          timeago.format(item.time, locale: 'ar'),
+                                          timeago.format(item.time,
+                                              locale: AppStrings.of(context).isAr ? 'ar' : 'en'),
                                           style: AppTypography.labelSmall.copyWith(
                                             color: isDark
                                                 ? AppColors.onSurfaceVariantDark
