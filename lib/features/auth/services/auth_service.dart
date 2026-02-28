@@ -234,12 +234,13 @@ class AuthService {
       if (avatarUrl != null) updates['avatar_url'] = avatarUrl;
       if (department != null) updates['department'] = department;
 
-      final data = await _client
-          .from(AppConstants.usersTable)
-          .update(updates)
-          .eq('id', userId)
-          .select()
-          .single();
+      // Use the secured RPC instead of direct table update to bypass strict RLS
+      final data = await _client.rpc('update_user_profile', params: {
+        'p_user_id': userId,
+        'p_full_name': fullName,
+        'p_department': department,
+        'p_avatar_url': avatarUrl,
+      });
 
       return UserModel.fromJson(data);
     } on PostgrestException catch (e) {

@@ -11,11 +11,11 @@ class HomeCubit extends Cubit<HomeState> {
       : _homeService = homeService,
         super(const HomeInitial());
 
-  Future<void> loadHome({required UserModel user}) async {
+  Future<void> loadHome() async {
     emit(const HomeLoading());
     try {
       final data = await _homeService.fetchHomeData();
-      emit(HomeLoaded(data: data, user: user));
+      emit(HomeLoaded(data: data));
     } on AppException catch (e) {
       emit(HomeError(message: e.message));
     } catch (e) {
@@ -23,7 +23,11 @@ class HomeCubit extends Cubit<HomeState> {
     }
   }
 
-  Future<void> refresh({required UserModel user}) async {
-    await loadHome(user: user);
+  Future<void> refresh() async {
+    await loadHome();
+  }
+
+  void clear() {
+    emit(const HomeInitial());
   }
 }

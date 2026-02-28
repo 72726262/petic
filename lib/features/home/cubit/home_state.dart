@@ -38,12 +38,11 @@ class HomeLoading extends HomeState {
 
 class HomeLoaded extends HomeState {
   final HomeData data;
-  final UserModel user;
 
-  const HomeLoaded({required this.data, required this.user});
+  const HomeLoaded({required this.data});
 
   @override
-  List<Object?> get props => [data, user];
+  List<Object?> get props => [data];
 }
 
 class HomeError extends HomeState {

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:employee_portal/core/theme/app_colors.dart';
+import 'package:employee_portal/core/theme/app_shadows.dart';
 import 'package:employee_portal/core/theme/app_typography.dart';
+import 'package:employee_portal/core/router/app_router.dart';
 import 'package:employee_portal/features/auth/cubit/auth_cubit.dart';
 import 'package:employee_portal/features/auth/cubit/auth_state.dart';
 import 'package:employee_portal/features/notifications/cubit/notification_overlay_cubit.dart';
@@ -81,8 +83,7 @@ class _OverlayGateState extends State<_OverlayGate> {
         onTap: () {
           entry.remove();
           if (notif.navigateTo != null) {
-            // Use the GoRouter's context from the outer widget
-            GoRouter.of(context).push(notif.navigateTo!);
+            AppRouter.router.push(notif.navigateTo!);
           }
         },
       ),
@@ -201,140 +202,87 @@ class _ToastCard extends StatelessWidget {
     final n = notification;
 
     return Container(
-      constraints: const BoxConstraints(maxWidth: 420),
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: n.color.withOpacity(0.25),
-            blurRadius: 24,
-            spreadRadius: 0,
-            offset: const Offset(0, 8),
-          ),
-          BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.45 : 0.12),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: isDark ? AppShadows.floating : AppShadows.card,
+        border: Border.all(
+          color: n.color.withOpacity(isDark ? 0.35 : 0.15),
+          width: 1.5,
+        ),
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: Stack(
-          children: [
-            // Background blur card
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Icon bubble
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              gradient: n.gradient,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: n.color.withOpacity(0.4),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Icon(n.icon, color: Colors.white, size: 26),
+          ),
+          const SizedBox(width: 16),
+          // Text
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  n.title,
+                  style: AppTypography.titleMedium.copyWith(
+                    color: isDark
+                        ? AppColors.onSurfaceDark
+                        : AppColors.onSurfaceLight,
+                    fontWeight: FontWeight.w800,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  n.body,
+                  style: AppTypography.bodySmall.copyWith(
+                    color: isDark
+                        ? AppColors.onSurfaceVariantDark
+                        : AppColors.onSurfaceVariantLight,
+                    fontWeight: FontWeight.w600,
+                    height: 1.3,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          if (n.navigateTo != null) ...[
+            const SizedBox(width: 12),
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: isDark
-                    ? const Color(0xFF1A2236).withOpacity(0.97)
-                    : Colors.white.withOpacity(0.98),
-                border: Border.all(
-                  color: n.color.withOpacity(0.25),
-                  width: 1.2,
-                ),
+                color: n.color.withOpacity(0.12),
+                shape: BoxShape.circle,
               ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  // Gradient icon bubble
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      gradient: n.gradient,
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: [
-                        BoxShadow(
-                          color: n.color.withOpacity(0.35),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Icon(n.icon, color: Colors.white, size: 24),
-                  ),
-                  const SizedBox(width: 14),
-                  // Text
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          n.title,
-                          style: AppTypography.titleSmall.copyWith(
-                            color: isDark
-                                ? AppColors.onSurfaceDark
-                                : AppColors.onSurfaceLight,
-                            fontWeight: FontWeight.w700,
-                          ),
-                          maxLines: 1,
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          n.body,
-                          style: AppTypography.bodySmall.copyWith(
-                            color: isDark
-                                ? AppColors.onSurfaceVariantDark
-                                : AppColors.onSurfaceVariantLight,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  // Arrow hint
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: n.color.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      Icons.arrow_back_ios_rounded,
-                      size: 14,
-                      color: n.color,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // Colored left accent bar
-            Positioned(
-              top: 0,
-              bottom: 0,
-              right: 0,
-              child: Container(
-                width: 4,
-                decoration: BoxDecoration(
-                  gradient: n.gradient,
-                  borderRadius: const BorderRadius.only(
-                    topRight: Radius.circular(20),
-                    bottomRight: Radius.circular(20),
-                  ),
-                ),
-              ),
-            ),
-            // Subtle shimmer overlay
-            Positioned.fill(
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      n.color.withOpacity(isDark ? 0.04 : 0.02),
-                      Colors.transparent,
-                    ],
-                  ),
-                ),
+              child: Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 14,
+                color: n.color,
               ),
             ),
           ],
-        ),
+        ],
       ),
     );
   }

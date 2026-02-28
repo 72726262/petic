@@ -55,7 +55,7 @@ class _HomeScreenState extends State<HomeScreen> {
       // Only load if not already loaded or loading
       final homeState = context.read<HomeCubit>().state;
       if (homeState is HomeInitial) {
-        context.read<HomeCubit>().loadHome(user: authState.user);
+        context.read<HomeCubit>().loadHome();
       }
     }
   }
@@ -67,36 +67,40 @@ class _HomeScreenState extends State<HomeScreen> {
         if (authState is AuthAuthenticated) {
           final homeState = context.read<HomeCubit>().state;
           if (homeState is HomeInitial || homeState is HomeError) {
-            context.read<HomeCubit>().loadHome(user: authState.user);
+            context.read<HomeCubit>().loadHome();
           }
         }
       },
       child: BlocBuilder<LocaleCubit, Locale>(
         builder: (context, _) {
           return Scaffold(
-            body: BlocBuilder<HomeCubit, HomeState>(
-              builder: (context, state) {
-                if (state is HomeLoading || state is HomeInitial) {
-                  return const _HomeSkeletonLoader();
+            body: BlocBuilder<AuthCubit, AuthState>(
+              builder: (context, authState) {
+                if (authState is! AuthAuthenticated) {
+                  return const SizedBox.shrink();
                 }
-                if (state is HomeError) {
-                  return ErrorStateWidget(
-                    message: state.message,
-                    onRetry: () {
-                      final authState = context.read<AuthCubit>().state;
-                      if (authState is AuthAuthenticated) {
-                        context.read<HomeCubit>().loadHome(user: authState.user);
-                      }
-                    },
-                  );
-                }
-                if (state is HomeLoaded) {
-                  return _HomeContent(
-                    data: state.data,
-                    user: state.user,
-                  );
-                }
-                return const SizedBox.shrink();
+                return BlocBuilder<HomeCubit, HomeState>(
+                  builder: (context, state) {
+                    if (state is HomeLoading || state is HomeInitial) {
+                      return const _HomeSkeletonLoader();
+                    }
+                    if (state is HomeError) {
+                      return ErrorStateWidget(
+                        message: state.message,
+                        onRetry: () {
+                          context.read<HomeCubit>().loadHome();
+                        },
+                      );
+                    }
+                    if (state is HomeLoaded) {
+                      return _HomeContent(
+                        data: state.data,
+                        user: authState.user,
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  },
+                );
               },
             ),
           );
@@ -119,7 +123,7 @@ class _HomeContent extends StatelessWidget {
 
     return RefreshIndicator(
       onRefresh: () async {
-        context.read<HomeCubit>().refresh(user: user);
+        context.read<HomeCubit>().refresh();
       },
       color: AppColors.primary,
       child: CustomScrollView(
@@ -240,7 +244,7 @@ class _HomeHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
+    print(user);
     return Container(
       decoration: BoxDecoration(
         gradient: isDark
@@ -276,7 +280,9 @@ class _HomeHeader extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      user.fullName.isNotEmpty ? user.fullName : AppStrings.of(context).employeeFallback,
+                      user.fullName.isNotEmpty
+                          ? user.fullName
+                          : AppStrings.of(context).employeeFallback,
                       style: AppTypography.titleLarge.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.w700,
@@ -597,7 +603,8 @@ class _InfoCardsRowState extends State<_InfoCardsRow> {
               child: Builder(builder: (ctx) {
                 final s = AppStrings.of(ctx);
                 final condition = _weatherCode >= 0
-                    ? s.weatherLabel(_weatherCode, _cityName.isNotEmpty ? _cityName : s.riyadh)
+                    ? s.weatherLabel(_weatherCode,
+                        _cityName.isNotEmpty ? _cityName : s.riyadh)
                     : s.weatherLoading;
                 return _InfoCard(
                   icon: _weatherIcon,

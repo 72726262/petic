@@ -1,5 +1,8 @@
+import 'dart:io';
+import 'package:employee_portal/features/home/cubit/home_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_picker/image_picker.dart';
 
 import 'package:employee_portal/core/theme/app_colors.dart';
 import 'package:employee_portal/core/theme/app_typography.dart';
@@ -13,6 +16,7 @@ import 'package:employee_portal/core/utils/app_strings.dart';
 
 import 'package:employee_portal/features/auth/cubit/auth_cubit.dart';
 import 'package:employee_portal/features/auth/cubit/auth_state.dart';
+import 'package:employee_portal/features/auth/services/auth_service.dart';
 
 import 'package:employee_portal/shared/widgets/custom_app_bar.dart';
 import 'package:employee_portal/shared/widgets/loading_widget.dart';
@@ -45,17 +49,80 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() => _saving = true);
     final uid = Supabase.instance.client.auth.currentUser!.id;
     try {
-      await Supabase.instance.client.from('users').update({
+      // Use AuthService (which calls the secure RPC) instead of direct table update
+      await AuthService().updateProfile(
+        userId: uid,
+        fullName: _nameCtrl.text.trim(),
+        department: _deptCtrl.text.trim(),
+      );
+
+      // Also update auth user metadata so it persists properly
+      await Supabase.instance.client.auth.updateUser(UserAttributes(data: {
         'full_name': _nameCtrl.text.trim(),
-        'department': _deptCtrl.text.trim(),
-      }).eq('id', uid);
+      }));
+
       if (mounted) {
         context.read<AuthCubit>().refreshUser();
         ErrorHandler.showSuccessSnackbar(context, s.profileSaveSuccess);
         setState(() => _editing = false);
       }
-    } catch (_) {
+    } catch (e) {
+      debugPrint('Profile update error: $e');
       if (mounted) ErrorHandler.showErrorSnackbar(context, s.profileSaveError);
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _pickAndUploadImage() async {
+    final picker = ImagePicker();
+    final xfile =
+        await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+    if (xfile == null) return;
+
+    final s = AppStrings.of(context);
+    setState(() => _saving = true);
+    try {
+      final uid = Supabase.instance.client.auth.currentUser!.id;
+      // On web, xfile.path is a blob URL without an extension. 
+      // Always extract extension from xfile.name instead.
+      final nameParts = xfile.name.split('.');
+      final ext = nameParts.length > 1 ? nameParts.last : 'png';
+      final fileName = '${uid}_${DateTime.now().millisecondsSinceEpoch}.$ext';
+      
+      // Read as bytes to avoid _Namespace errors
+      final bytes = await xfile.readAsBytes();
+      
+      // Upload to Supabase Storage 'avatars' bucket using uploadBinary
+      await Supabase.instance.client.storage.from('avatars').uploadBinary(
+        fileName, 
+        bytes,
+        fileOptions: FileOptions(contentType: 'image/$ext'),
+      );
+      
+      // Get public URL
+      final avatarUrl = Supabase.instance.client.storage.from('avatars').getPublicUrl(fileName);
+      
+      // Update DB using our secure AuthService
+      await AuthService().updateProfile(
+        userId: uid,
+        avatarUrl: avatarUrl,
+      );
+
+      if (mounted) {
+        context.read<AuthCubit>().refreshUser();
+        ErrorHandler.showSuccessSnackbar(context, s.profileSaveSuccess);
+      }
+    } catch (e) {
+      debugPrint('Avatar upload error: $e');
+      if (e.toString().contains('Bucket not found')) {
+        if (mounted)
+          ErrorHandler.showErrorSnackbar(context,
+              'خطأ: يجب إنشاء Storage Bucket باسم "avatars" في Supabase.');
+      } else {
+        if (mounted)
+          ErrorHandler.showErrorSnackbar(context, 'فشل رفع الصورة: $e');
+      }
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -81,6 +148,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
     if (confirmed == true && mounted) {
+      context.read<HomeCubit>().clear();
       context.read<AuthCubit>().signOut();
     }
   }
@@ -143,40 +211,43 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Center(
                 child: Column(
                   children: [
-                    Stack(
-                      children: [
-                        CircleAvatar(
-                          radius: 52,
-                          backgroundColor:
-                              _roleColor(user.role).withOpacity(0.12),
-                          backgroundImage: user.avatarUrl != null
-                              ? CachedNetworkImageProvider(user.avatarUrl!)
-                              : null,
-                          child: user.avatarUrl == null
-                              ? Text(user.initials,
-                                  style: AppTypography.headlineMedium
-                                      .copyWith(color: _roleColor(user.role)))
-                              : null,
-                        ),
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                  color: isDark
-                                      ? AppColors.backgroundDark
-                                      : AppColors.backgroundLight,
-                                  width: 2),
-                            ),
-                            child: const Icon(Icons.camera_alt_outlined,
-                                color: Colors.white, size: 14),
+                    GestureDetector(
+                      onTap: _pickAndUploadImage,
+                      child: Stack(
+                        children: [
+                          CircleAvatar(
+                            radius: 52,
+                            backgroundColor:
+                                _roleColor(user.role).withOpacity(0.12),
+                            backgroundImage: user.avatarUrl != null
+                                ? CachedNetworkImageProvider(user.avatarUrl!)
+                                : null,
+                            child: user.avatarUrl == null
+                                ? Text(user.initials,
+                                    style: AppTypography.headlineMedium
+                                        .copyWith(color: _roleColor(user.role)))
+                                : null,
                           ),
-                        ),
-                      ],
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                    color: isDark
+                                        ? AppColors.backgroundDark
+                                        : AppColors.backgroundLight,
+                                    width: 2),
+                              ),
+                              child: const Icon(Icons.camera_alt_outlined,
+                                  color: Colors.white, size: 14),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: AppSpacing.md),
                     Text(user.fullName, style: AppTypography.headlineSmall),
@@ -272,8 +343,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ? AppColors.surfaceDark
                           : AppColors.surfaceLight,
                       borderRadius: AppRadius.lgBorderRadius,
-                      boxShadow:
-                          isDark ? AppShadows.softDark : AppShadows.soft,
+                      boxShadow: isDark ? AppShadows.softDark : AppShadows.soft,
                     ),
                     child: Row(
                       children: [
@@ -344,8 +414,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ? AppColors.surfaceDark
                           : AppColors.surfaceLight,
                       borderRadius: AppRadius.lgBorderRadius,
-                      boxShadow:
-                          isDark ? AppShadows.softDark : AppShadows.soft,
+                      boxShadow: isDark ? AppShadows.softDark : AppShadows.soft,
                     ),
                     child: Row(
                       children: [
